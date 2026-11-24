@@ -1,0 +1,39 @@
+{
+  "name": "open-social-listening",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source, self-hosted social listening powered by the SocQ API.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.0",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.44.0",
+    "lucide-react": "^0.469.0",
+    "next": "^16.2.9",
+    "nodemailer": "^6.10.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.3.0",
+    "zod": "^3.25.23"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5",
+    "vitest": "^3.2.0"
+  }
+}

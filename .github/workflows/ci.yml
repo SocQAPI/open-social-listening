@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      OSL_DISABLE_SCHEDULER: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Docker image smoke test
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t open-social-listening:ci .
+      - name: Start container
+        run: docker run -d --name osl -p 3000:3000 open-social-listening:ci
+      - name: Wait for the API and check the demo project
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:3000/api/settings > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/api/settings
+          echo
+          projects=$(curl -fsS http://localhost:3000/api/projects)
+          echo "$projects" | head -c 600
+          echo
+          echo "$projects" | grep -q '"isDemo":true'
+          curl -fsS "http://localhost:3000/api/stats?projectId=1" | head -c 400
+          echo
+          curl -fsS "http://localhost:3000/api/mentions?projectId=1&limit=2" | head -c 400
+          echo
+          curl -fsS -o /dev/null "http://localhost:3000/api/export?projectId=1&format=csv"
+      - name: Container logs
+        if: always()
+        run: docker logs osl
