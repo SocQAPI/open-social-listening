@@ -8,7 +8,7 @@ export const reddit: SourceDefinition = {
   label: "Reddit",
   platform: "reddit",
   endpoint: "reddit/search",
-  pricing: { base: 0, perResult: 0.6 },
+  pricing: { base: 0, perResult: 0.2 },
   limits: { min: 1, max: 2000, default: 20 },
   supportsResultsLimit: true,
   defaultEnabled: true,
