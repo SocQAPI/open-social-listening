@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { api, errorText, useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
@@ -45,9 +45,11 @@ export function OnboardingView() {
 
   const configured = settings.data?.apiKey.configured ?? false;
 
-  // With a key already in place, skip straight to the project.
+  // With a key already in place when the page opens, skip straight to the project.
+  // A key connected on this page stays on step 1 so the confirmation and balance are visible.
+  const connectedHere = useRef(false);
   useEffect(() => {
-    if (configured && step === 1) setStep(2);
+    if (configured && step === 1 && !connectedHere.current) setStep(2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configured]);
 
@@ -63,6 +65,7 @@ export function OnboardingView() {
     try {
       const res = await api<{ account: { credits: number | null } | null }>("/api/settings", { method: "PUT", json: { apiKey: key.trim() } });
       setBalance(res.account?.credits ?? null);
+      connectedHere.current = true;
       await settings.reload();
       setKey("");
     } catch (error) {

@@ -5,6 +5,7 @@ import {
   SocqRateLimitError,
   SocqTaskFailedError,
   SocqTimeoutError,
+  errorMessage,
 } from "./errors";
 import type { AccountInfo, SocqItem, SubmitResult, TaskInfo, TaskStatus } from "./types";
 
@@ -36,6 +37,9 @@ export interface WaitOptions {
 
 const TASK_STATUSES: readonly TaskStatus[] = ["queued", "running", "succeeded", "failed"];
 
+/** Retries for dropped connections and 502/503/504, on top of the 429 handling. */
+const MAX_TRANSIENT_RETRIES = 3;
+
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export class SocqClient {
@@ -57,7 +61,10 @@ export class SocqClient {
   /** Submit a collection task, e.g. `submit("reddit/search", { query: "acme" })`. */
   async submit(endpoint: string, input: Record<string, unknown>): Promise<SubmitResult> {
     const path = `/v1/${endpoint.replace(/^\/+/, "")}`;
-    const data = asRecord(await this.request("POST", path, input));
+    // One key per logical submission: retries after a dropped connection return the same task
+    // instead of creating (and billing) a second one. SocQ keeps keys for 24 hours.
+    const idempotencyKey = `osl-${globalThis.crypto.randomUUID()}`;
+    const data = asRecord(await this.request("POST", path, input, { "Idempotency-Key": idempotencyKey }));
     const taskId = typeof data.task_id === "string" ? data.task_id : null;
     if (!taskId) throw new SocqError("SocQ did not return a task_id", 502, data);
     return {
@@ -117,22 +124,43 @@ export class SocqClient {
     };
   }
 
-  private async request(method: "GET" | "POST", path: string, body?: unknown): Promise<unknown> {
+  private async request(method: "GET" | "POST", path: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<unknown> {
+    // GETs are safe to repeat; POSTs only when they carry an idempotency key.
+    const retryable = method === "GET" || "Idempotency-Key" in extraHeaders;
+    let transientFailures = 0;
     for (let attempt = 0; ; attempt++) {
-      const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "User-Agent": USER_AGENT,
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
+      let response: Response;
+      try {
+        response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            ...extraHeaders,
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+      } catch (error) {
+        // Dropped connection, DNS hiccup, TLS reset: Node's fetch throws before any response.
+        if (retryable && transientFailures < MAX_TRANSIENT_RETRIES) {
+          transientFailures++;
+          await this.sleep(1_000 * transientFailures);
+          continue;
+        }
+        throw new SocqError(`Could not reach SocQ: ${errorMessage(error)}`, 0, null);
+      }
       const payload = await readBody(response);
       const status = effectiveStatus(response, payload);
 
       if (status < 400) return unwrap(payload);
+
+      if (retryable && (status === 502 || status === 503 || status === 504) && transientFailures < MAX_TRANSIENT_RETRIES) {
+        transientFailures++;
+        await this.sleep(1_000 * transientFailures);
+        continue;
+      }
 
       const message = describeError(payload, status);
       if (status === 429) {

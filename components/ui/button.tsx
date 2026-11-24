@@ -40,7 +40,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         "inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap cursor-pointer select-none",
         "transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[0.98]",
-        "disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100",
+        "disabled:cursor-not-allowed disabled:active:scale-100",
+        variant === "primary" || variant === "ink"
+          ? "disabled:border-track disabled:bg-track disabled:text-ink-4"
+          : "disabled:opacity-55",
+        loading && (variant === "primary" || variant === "ink") && "disabled:border-accent-strong disabled:bg-accent-strong disabled:text-white",
         variant === "primary" || variant === "ink" ? "font-semibold" : "",
         variants[variant],
         sizes[size],

@@ -25,8 +25,15 @@ interface StatsForCounts {
   keywordMentions: number;
 }
 
+/** Same calendar-day (UTC) window as /api/stats, so filter counts and the list agree. */
+function periodStart(days: number): string {
+  const now = new Date();
+  const todayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return new Date(todayStart - (days - 1) * 86_400_000).toISOString();
+}
+
 const PERIODS = [
-  { value: 1, label: "Last 24 hours" },
+  { value: 1, label: "Today" },
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
   { value: 90, label: "Last 90 days" },
@@ -92,6 +99,8 @@ export function InboxView() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  /** Below xl the detail pane is a bottom sheet that opens on selection. */
+  const [sheetOpen, setSheetOpen] = useState(false);
   const seen = useRef<Set<number> | null>(null);
   const ticket = useRef(0);
 
@@ -104,7 +113,7 @@ export function InboxView() {
     if (sentiment !== "any") p.set("sentiment", sentiment);
     if (onlyStarred) p.set("starred", "1");
     if (q) p.set("q", q);
-    p.set("from", new Date(Date.now() - period * 86_400_000).toISOString());
+    p.set("from", periodStart(period));
     return p;
   }, [projectId, kind, source, sentiment, onlyStarred, q, period]);
 
@@ -169,8 +178,18 @@ export function InboxView() {
     [reloadProjects, toast],
   );
 
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSheetOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheetOpen]);
+
   const select = (m: MentionDTO) => {
     setSelectedId(m.id);
+    setSheetOpen(true);
     if (!m.read) void patch(m, { read: true });
   };
 
@@ -282,7 +301,12 @@ export function InboxView() {
               >
                 {id !== "all" && <SourceBadge source={id} inverted={active} />}
                 {id === "all" ? "All sources" : sourceLabel(id)}
-                {n !== undefined && <span className={cn("tabular", active ? "text-white/70" : "text-ink-4")}>{formatInt(n)}</span>}
+                {n !== undefined && (
+                  <>
+                    {" "}
+                    <span className={cn("tabular", active ? "text-white/70" : "text-ink-4")}>{formatInt(n)}</span>
+                  </>
+                )}
               </button>
             );
           })}
@@ -400,7 +424,32 @@ export function InboxView() {
           )}
         </Card>
 
-        <Card as="aside" aria-label="Mention detail" className="flex min-w-0 flex-[1_1_340px] flex-col gap-[18px] p-5 lg:sticky lg:top-5">
+        {sheetOpen && (
+          <button
+            type="button"
+            aria-label="Close mention"
+            onClick={() => setSheetOpen(false)}
+            className="animate-fade-in fixed inset-0 z-30 cursor-default bg-ink/30 xl:hidden"
+          />
+        )}
+        <Card
+          as="aside"
+          aria-label="Mention detail"
+          className={cn(
+            "min-w-0 flex-col gap-[18px] p-5",
+            "xl:sticky xl:top-5 xl:flex xl:flex-[1_1_340px]",
+            sheetOpen
+              ? "animate-rise fixed inset-x-0 bottom-0 z-40 flex max-h-[82vh] overflow-y-auto rounded-t-2xl rounded-b-none shadow-[0_-8px_32px_rgba(23,24,28,0.18)] xl:static xl:z-auto xl:max-h-none xl:overflow-visible xl:rounded-[14px] xl:shadow-none"
+              : "hidden",
+          )}
+        >
+          {sheetOpen && (
+            <div className="-mt-1 flex justify-end xl:hidden">
+              <Button size="sm" variant="ghost" onClick={() => setSheetOpen(false)}>
+                Close
+              </Button>
+            </div>
+          )}
           {selected ? <Detail key={selected.id} m={selected} onStar={() => patch(selected, { starred: !selected.starred })} onUnread={() => patch(selected, { read: false })} /> : <p className="m-0 text-ink-3">Select a mention to see the full post.</p>}
         </Card>
       </div>

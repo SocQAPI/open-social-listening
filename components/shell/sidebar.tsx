@@ -33,7 +33,6 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
   const pathname = usePathname();
   const router = useRouter();
   const base = `/p/${projectId}`;
-  const current = projects?.find((p) => p.id === projectId);
   const nav = [
     { href: `${base}/inbox`, label: "Inbox", icon: Inbox, badge: unread },
     { href: `${base}/dashboard`, label: "Dashboard", icon: BarChart3, badge: null },
@@ -41,7 +40,10 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
   ];
 
   return (
-    <nav aria-label="Primary" className="flex flex-[1_1_240px] flex-col gap-6 border-r border-line bg-bg px-4 py-5">
+    <nav
+      aria-label="Primary"
+      className="flex flex-[1_1_240px] flex-col gap-3 border-b border-line bg-bg px-4 py-3 md:gap-6 md:border-r md:border-b-0 md:py-5"
+    >
       <Logo />
 
       <label className="relative">
@@ -49,7 +51,7 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
         <select
           value={projectId}
           onChange={(e) => router.push(`/p/${e.target.value}/inbox`)}
-          className="min-h-11 w-full cursor-pointer appearance-none rounded-[10px] border border-line bg-surface pr-16 pl-3 font-semibold text-ink focus:border-ink focus:outline-none"
+          className="min-h-11 w-full cursor-pointer appearance-none truncate rounded-[10px] border border-line bg-surface pr-9 pl-3 font-semibold text-ink focus:border-ink focus:outline-none"
         >
           {(projects ?? []).map((p) => (
             <option key={p.id} value={p.id}>
@@ -57,15 +59,12 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
             </option>
           ))}
         </select>
-        {current?.isDemo && (
-          <span className="pointer-events-none absolute top-1/2 right-8 -translate-y-1/2 rounded-md bg-subtle px-2 py-0.5 text-xs font-medium text-ink-3">Demo</span>
-        )}
         <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 9l6 6 6-6" />
         </svg>
       </label>
 
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-row gap-1 md:flex-col md:gap-0.5">
         {nav.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
@@ -75,19 +74,19 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-10 items-center gap-2.5 rounded-lg px-3 no-underline transition-colors duration-150",
+                "flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-2 no-underline transition-colors duration-150 md:flex-none md:justify-start md:gap-2.5 md:px-3",
                 active ? "bg-surface font-semibold text-ink shadow-[0_0_0_1px_var(--color-line)]" : "font-medium text-ink-2 hover:bg-subtle hover:text-ink",
               )}
             >
               <Icon aria-hidden="true" className={cn("size-[18px]", active && "text-accent")} strokeWidth={2} />
-              <span className="flex-1">{item.label}</span>
+              <span className="md:flex-1">{item.label}</span>
               {item.badge ? <span className="tabular rounded-full bg-ink px-2 text-xs font-semibold text-white">{formatInt(item.badge)}</span> : null}
             </Link>
           );
         })}
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="hidden flex-col gap-1.5 md:flex">
         <span className="px-3 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">Projects</span>
         {projects === null ? (
           <div className="flex flex-col gap-2 px-3 py-1">
@@ -113,17 +112,17 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
         </Link>
       </div>
 
-      <div className="flex-1" />
+      <div className="hidden flex-1 md:block" />
 
       {connected === false ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3.5">
+        <div className="hidden flex-col gap-2 rounded-xl border border-line bg-surface p-3.5 md:flex">
           <span className="text-[13px] text-ink-2">Connect a SocQ API key to track your own brand.</span>
           <Link href="/onboarding" className="inline-flex min-h-10 items-center justify-center rounded-[10px] bg-accent-strong px-3 font-semibold text-white no-underline transition-colors hover:bg-accent-hover">
             Connect SocQ
           </Link>
         </div>
       ) : (
-      <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5">
+      <div className="hidden flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5 md:flex">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-medium text-ink-3">SocQ balance</span>
           {balance === null ? <Skeleton className="h-5 w-16" /> : <span className="font-display tabular text-base font-semibold">{formatInt(balance)} cr</span>}
@@ -144,7 +143,7 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
         </a>
       </div>
       )}
-      <div className="flex justify-between px-1.5 text-xs">
+      <div className="hidden justify-between px-1.5 text-xs md:flex">
         <a href={SOCQ_URL} target="_blank" rel="noopener" className="text-ink-3 hover:text-ink">
           Powered by SocQ
         </a>

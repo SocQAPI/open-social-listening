@@ -35,6 +35,35 @@ describe("SocqClient", () => {
     expect(JSON.parse(String(calls[0].init?.body))).toEqual({ query: "acme" });
   });
 
+  it("retries a dropped submit with the same idempotency key", async () => {
+    const calls: { headers: Record<string, string> }[] = [];
+    let attempt = 0;
+    const fetch: FetchLike = async (_url, init) => {
+      calls.push({ headers: init?.headers as Record<string, string> });
+      attempt++;
+      if (attempt === 1) throw new TypeError("fetch failed");
+      if (attempt === 2) return new Response("bad gateway", { status: 502 });
+      return new Response(JSON.stringify({ code: 200, data: { task_id: "T9", status: "queued" } }), { status: 200 });
+    };
+    const sleep = vi.fn(async () => {});
+    const socq = new SocqClient({ apiKey: "test-key", baseUrl: "https://api.test", fetch, sleep });
+    const result = await socq.submit("reddit/search", { query: "acme" });
+    expect(result.task_id).toBe("T9");
+    expect(calls).toHaveLength(3);
+    const keys = calls.map((c) => c.headers["Idempotency-Key"]);
+    expect(keys[0]).toMatch(/^osl-/);
+    expect(new Set(keys).size).toBe(1);
+    expect(sleep).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after repeated network failures", async () => {
+    const fetch: FetchLike = async () => {
+      throw new TypeError("fetch failed");
+    };
+    const socq = new SocqClient({ apiKey: "test-key", baseUrl: "https://api.test", fetch, sleep: async () => {} });
+    await expect(socq.getAccount()).rejects.toThrow(/Could not reach SocQ/);
+  });
+
   it("polls until the task succeeds", async () => {
     const { socq, sleep } = client([
       { body: { code: 200, data: { task_id: "T1", status: "queued" } } },

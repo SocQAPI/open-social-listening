@@ -18,7 +18,7 @@ function Shell({ children }: { children: ReactNode }) {
         monthBudget={project && !project.isDemo && project.monthlyBudgetCredits > 0 ? project.monthlyBudgetCredits : null}
         connected={settings ? settings.apiKey.configured : null}
       />
-      <main className="flex min-w-0 flex-[999_1_560px] flex-col gap-5 px-5 pt-7 pb-12 sm:px-8">{children}</main>
+      <main className="flex min-w-0 flex-[999_1_528px] flex-col gap-5 px-4 pt-5 pb-12 sm:px-8 md:pt-7">{children}</main>
     </div>
   );
 }

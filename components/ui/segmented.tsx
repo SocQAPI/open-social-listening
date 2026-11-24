@@ -34,7 +34,12 @@ export function Segmented<T extends string | number>({ label, options, value, on
             )}
           >
             {o.label}
-            {o.count !== undefined && <span className="tabular ml-1.5 opacity-70">{o.count}</span>}
+            {o.count !== undefined && (
+              <>
+                {" "}
+                <span className="tabular ml-1 opacity-70">{o.count}</span>
+              </>
+            )}
           </button>
         );
       })}

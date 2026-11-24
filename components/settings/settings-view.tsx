@@ -136,7 +136,7 @@ export function SettingsView() {
               {project.paused ? "Resume" : "Pause"}
             </Button>
           )}
-          <Button type="submit" form="project-settings" variant="primary" loading={saving} disabled={!dirty} icon={<Check aria-hidden="true" className="size-4" />}>
+          <Button type="submit" form="project-settings" variant={dirty || saving ? "primary" : "secondary"} loading={saving} disabled={!dirty} icon={<Check aria-hidden="true" className="size-4" />}>
             {dirty ? "Save changes" : "Saved"}
           </Button>
         </div>
@@ -228,7 +228,7 @@ export function SettingsView() {
       </Section>
 
       <Section id="schedule" title="Schedule and budget">
-        <div className="flex flex-wrap items-end gap-6">
+        <div className="flex flex-wrap items-start gap-6">
           <div className="flex flex-col gap-2">
             <span id="interval-label" className="font-medium">
               Run
@@ -239,7 +239,7 @@ export function SettingsView() {
             <TextInput type="number" min={0} step={500} value={budget} onChange={(e) => update({ monthlyBudgetCredits: Number(e.target.value) || 0 })} className="w-44 tabular" />
           </Field>
           {monthUsed !== null && budget > 0 && !project.isDemo && (
-            <div className="flex min-w-[240px] flex-[1_1_260px] flex-col gap-1.5 pb-7">
+            <div className="flex min-w-[240px] flex-[1_1_260px] flex-col gap-1.5 pt-[34px]">
               <div className="flex justify-between text-[13px] text-ink-3">
                 <span>Used this month</span>
                 <span className="tabular">

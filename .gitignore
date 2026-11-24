@@ -9,3 +9,6 @@ data/
 .DS_Store
 npm-debug.log*
 coverage/
+
+# Written by `next dev` for coding agents
+AGENTS.md

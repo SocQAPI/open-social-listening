@@ -74,6 +74,8 @@ export function DashboardView() {
     const recent = s.daily.slice(-3);
     const peak = recent.reduce((a, d) => (d.total > a.total ? d : a), recent[0]);
     const others = s.daily.filter((d) => d.date !== peak.date);
+    // A brand-new project has no baseline; anything would look like a spike.
+    if (others.filter((d) => d.total > 0).length < 4) return null;
     const avg = others.reduce((a, d) => a + d.total, 0) / Math.max(1, others.length);
     if (avg <= 0 || peak.total < 10 || peak.total < avg * 2.5) return null;
     return { date: peak.date, total: peak.total, ratio: peak.total / avg, top: topSource(peak.bySource) };
@@ -101,7 +103,15 @@ export function DashboardView() {
         .map(([id, n]) => ({ key: id, label: sourceLabel(id), value: n }))
     : [];
 
-  const change = s && s.totals.previousPeriod > 0 ? Math.round(((s.totals.mentions - s.totals.previousPeriod) / s.totals.previousPeriod) * 100) : null;
+  // A percentage over a tiny base ("+4900%") says nothing; compare raw counts until the base is meaningful.
+  const change = s && s.totals.previousPeriod >= 10 ? Math.round(((s.totals.mentions - s.totals.previousPeriod) / s.totals.previousPeriod) * 100) : null;
+  const changeNote = !s
+    ? ""
+    : change !== null
+      ? `${change >= 0 ? "+" : "−"}${Math.abs(change)}% vs the ${days} days before`
+      : s.totals.previousPeriod > 0
+        ? `vs ${formatInt(s.totals.previousPeriod)} in the ${days} days before`
+        : "No earlier data to compare";
   const brandVoice = s?.shareOfVoice.find((v) => v.kind === "brand");
   const scored = s ? s.sentiment.positive + s.sentiment.neutral + s.sentiment.negative : 0;
   const budget = s?.credits.budget ?? 0;
@@ -151,7 +161,7 @@ export function DashboardView() {
             <Kpi
               label={`Mentions, ${rangeLabel.toLowerCase()}`}
               value={formatInt(s.totals.mentions)}
-              note={change === null ? "No earlier data to compare" : `${change >= 0 ? "+" : "−"}${Math.abs(change)}% vs the ${days} days before`}
+              note={changeNote}
             />
             <Kpi
               label="Your share of voice"
@@ -206,7 +216,11 @@ export function DashboardView() {
 
         <Card aria-labelledby="sentiment" className="flex flex-col gap-3.5 px-5 py-[18px]">
           <CardHeader id="sentiment" title="Sentiment" meta={rangeLabel} />
-          {s ? (
+          {s && scored === 0 ? (
+            <p className="m-0 text-ink-3">
+              No sentiment scores in this period. Today only the Web source returns sentiment; scoring for every source is planned.
+            </p>
+          ) : s ? (
             <>
               <StackedShare
                 label="Sentiment"

@@ -74,11 +74,19 @@ export function ProjectProvider({ projectId, children }: { projectId: number; ch
   useEffect(() => {
     if (!running) return;
     const before = project?.counts?.mentions ?? 0;
+    let lastSeen = before;
     stopPolling();
     pollRef.current = window.setInterval(async () => {
       try {
         const { items } = await api<{ items: ProjectWithCounts[] }>("/api/projects");
         const current = items.find((p) => p.id === projectId);
+        // Sources finish at different speeds and each one is stored as soon as it is done,
+        // so refresh the views whenever new mentions land instead of waiting for the slowest source.
+        if (current?.running && (current.counts?.mentions ?? 0) !== lastSeen) {
+          lastSeen = current.counts?.mentions ?? 0;
+          projectsQ.setData(() => ({ items }));
+          setRunVersion((v) => v + 1);
+        }
         if (current && !current.running) {
           stopPolling();
           setRunning(false);

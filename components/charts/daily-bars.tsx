@@ -11,9 +11,10 @@ export interface DailyPoint {
 }
 
 function niceMax(v: number): number {
-  if (v <= 5) return 5;
+  if (v <= 4) return 4;
   const pow = 10 ** Math.floor(Math.log10(v));
-  for (const m of [1, 2, 2.5, 5, 10]) {
+  // Only steps whose half is a whole number, so the middle gridline reads cleanly.
+  for (const m of [1, 2, 4, 6, 8, 10]) {
     if (m * pow >= v) return m * pow;
   }
   return 10 * pow;
