@@ -1,0 +1,34 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import type { ReactNode } from "react";
+import { ProjectProvider, useProject } from "@/components/shell/project-context";
+import { Sidebar } from "@/components/shell/sidebar";
+
+function Shell({ children }: { children: ReactNode }) {
+  const { projectId, projects, project, account, monthUsed, settings } = useProject();
+  return (
+    <div className="flex min-h-screen flex-wrap items-stretch bg-bg">
+      <Sidebar
+        projectId={projectId}
+        projects={projects ? projects.map((p) => ({ id: p.id, name: p.name, isDemo: p.isDemo, paused: p.paused })) : null}
+        unread={project?.counts?.unread ?? null}
+        balance={account?.credits ?? null}
+        monthUsed={project?.isDemo ? null : monthUsed}
+        monthBudget={project && !project.isDemo && project.monthlyBudgetCredits > 0 ? project.monthlyBudgetCredits : null}
+        connected={settings ? settings.apiKey.configured : null}
+      />
+      <main className="flex min-w-0 flex-[999_1_560px] flex-col gap-5 px-5 pt-7 pb-12 sm:px-8">{children}</main>
+    </div>
+  );
+}
+
+export default function ProjectLayout({ children }: { children: ReactNode }) {
+  const params = useParams<{ projectId: string }>();
+  const projectId = Number(params.projectId);
+  return (
+    <ProjectProvider key={projectId} projectId={projectId}>
+      <Shell>{children}</Shell>
+    </ProjectProvider>
+  );
+}

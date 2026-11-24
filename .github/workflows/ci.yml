@@ -54,6 +54,14 @@ jobs:
           curl -fsS "http://localhost:3000/api/mentions?projectId=1&limit=2" | head -c 400
           echo
           curl -fsS -o /dev/null "http://localhost:3000/api/export?projectId=1&format=csv"
+      - name: Check the pages render
+        run: |
+          for path in / /onboarding /p/1/inbox /p/1/dashboard /p/1/settings /icon.svg; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$path")
+            echo "$path -> $code"
+            test "$code" = "200"
+          done
+          curl -fsS http://localhost:3000/p/1/inbox | grep -q "Open Social Listening"
       - name: Container logs
         if: always()
         run: docker logs osl

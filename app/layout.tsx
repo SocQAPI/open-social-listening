@@ -1,17 +1,29 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Inter, Space_Grotesk } from "next/font/google";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const grotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-grotesk", display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Open Social Listening",
+  title: { default: "Open Social Listening", template: "%s · Open Social Listening" },
   description: "Self-hosted social listening for Reddit, X, YouTube, TikTok, news and the web, powered by the SocQ API.",
   robots: { index: false, follow: false },
+  icons: { icon: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f6f6f3",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${grotesk.variable}`}>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

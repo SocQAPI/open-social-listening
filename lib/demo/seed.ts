@@ -109,7 +109,7 @@ export async function seedDemoIfEmpty(db: Db): Promise<boolean> {
       excludeTerms: ["hiring"],
       sources: defaultSourcesConfig(),
       intervalMinutes: 1440,
-      monthlyBudgetCredits: 3000,
+      monthlyBudgetCredits: 7500,
       paused: false,
       pausedReason: null,
       isDemo: true,

@@ -1,14 +1,52 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api, errorText } from "@/lib/ui/api";
+import { LogoMark } from "@/components/shell/logo";
+import { Spinner } from "@/components/ui/spinner";
+
+interface ProjectSummary {
+  id: number;
+  isDemo: boolean;
+}
+
+/** Entry point: open the newest real project, else the demo, else onboarding. */
 export default function Home() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { items } = await api<{ items: ProjectSummary[] }>("/api/projects");
+        if (cancelled) return;
+        const real = items.filter((p) => !p.isDemo).sort((a, b) => b.id - a.id)[0];
+        const target = real ?? items[0];
+        router.replace(target ? `/p/${target.id}/inbox` : "/onboarding");
+      } catch (err) {
+        if (!cancelled) setError(errorText(err));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-3 px-6">
-      <h1 className="text-2xl font-semibold">Open Social Listening</h1>
-      <p className="text-neutral-600">
-        The interface is on its way. The API is already live under <code>/api</code> — try{" "}
-        <a className="underline" href="/api/projects">
-          /api/projects
-        </a>
-        .
-      </p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg text-ink-3">
+      <LogoMark size={40} />
+      {error ? (
+        <p role="alert" className="m-0 max-w-sm text-center">
+          {error}
+        </p>
+      ) : (
+        <span className="inline-flex items-center gap-2">
+          <Spinner className="size-4" />
+          Loading…
+        </span>
+      )}
     </main>
   );
 }

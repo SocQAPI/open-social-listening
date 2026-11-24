@@ -1,12 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
+/*
+ * "Signal Desk" design tokens.
+ * Chrome stays neutral; colour is reserved for data (brand / competitors / sentiment)
+ * and for the SocQ accent on primary actions and focus.
+ */
+@theme {
+  --color-bg: #f6f6f3;
+  --color-surface: #ffffff;
+  --color-subtle: #f0efeb;
+  --color-track: #ecebe6;
+  --color-line: #e4e3de;
+  --color-line-strong: #dad9d3;
+  --color-input: #cfcec8;
+  --color-select: #f2f5fb;
+  --color-highlight: #fbe9b7;
+
+  --color-ink: #17181c;
+  --color-ink-2: #3a3c42;
+  --color-ink-3: #55585f;
+  --color-ink-4: #6b6e76;
+  --color-link: #1c4fa0;
+
+  /* SocQ accent. #f64c31 only for non-text marks (≥3:1); text and filled buttons use the darker steps. */
+  --color-accent: #f64c31;
+  --color-accent-strong: #d4391f;
+  --color-accent-hover: #c9341c;
+  --color-accent-press: #b42f18;
+  --color-accent-tint: #feedea;
+  --color-accent-text: #b42f18;
+
+  /* Data colours (validated categorical slots 1–3, diverging blue↔red). */
+  --color-brand: #2a78d6;
+  --color-brand-strong: #1c5cab;
+  --color-comp-1: #eb6834;
+  --color-comp-2: #1baf7a;
+  --color-pos: #2a78d6;
+  --color-neu: #a3a29c;
+  --color-neu-bar: #c9c8c2;
+  --color-neg: #e34948;
+
+  --color-chip-brand-bg: #eaf1fb;
+  --color-chip-brand-fg: #1c4fa0;
+  --color-chip-comp-bg: #fcede5;
+  --color-chip-comp-fg: #9a3a12;
+  --color-chip-kw-bg: #edefea;
+  --color-chip-kw-fg: #3d4a40;
+  --color-ok-bg: #edefea;
+  --color-ok-fg: #2f3a31;
+  --color-info-bg: #edf4fc;
+  --color-info-fg: #123a78;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --animate-fade-in: fade-in 180ms ease-out both;
+  --animate-rise: rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-spin-slow: osl-spin 0.9s linear infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @keyframes osl-spin {
+    to { transform: rotate(360deg); }
+  }
 }
 
-body {
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  background: #f6f6f3;
-  color: #17181c;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--color-link);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-accent-tint);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-track) 0%, var(--color-subtle) 50%, var(--color-track) 100%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
