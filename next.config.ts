@@ -10,6 +10,11 @@ const serverConfig: NextConfig = {
   poweredByHeader: false,
   // The libsql driver ships native bindings; keep it out of the server bundle.
   serverExternalPackages: ["@libsql/client", "libsql"],
+  // lib/ui/api.ts imports the in-browser API only in the static demo; resolve it to a stub here so the
+  // client bundle doesn't pull in the route handlers and their server-only dependencies.
+  turbopack: {
+    resolveAlias: { "@/lib/demo/static-api": "./lib/demo/static-api-stub.ts" },
+  },
 };
 
 const staticDemoConfig: NextConfig = {
