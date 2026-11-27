@@ -10,7 +10,7 @@ import { INTERVALS, SOURCES, draftEstimate, limitOptions, searchCost, suggestedB
 import { Button } from "@/components/ui/button";
 import { Card, Field, Meter, Notice, Select, Skeleton, Switch, TextInput } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
-import { TermEditor } from "@/components/ui/term-editor";
+import { BroadTermNotice, TermEditor } from "@/components/ui/term-editor";
 import { useToast } from "@/components/ui/toast";
 import { ProjectBanner, ProjectStatusLine } from "@/components/shell/page-header";
 import { useProject, type ProjectWithCounts } from "@/components/shell/project-context";
@@ -158,6 +158,7 @@ export function SettingsView() {
           placeholder="Competitor name"
           max={10}
         />
+        <BroadTermNotice terms={[...draft.brandTerms, ...draft.competitorNames]} />
         <TermEditor kind="keyword" title="Topics" hint="Category words where buyers ask for recommendations." values={draft.keywords} onChange={(v) => update({ keywords: v })} placeholder="e.g. best crm for startups" />
         <TermEditor
           kind="exclude"

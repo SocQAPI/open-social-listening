@@ -3,6 +3,8 @@
 import { useId, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/ui/cn";
+import { broadTerms } from "@/lib/terms";
+import { Notice } from "./primitives";
 import type { TermKind } from "./tokens";
 
 const chipStyle: Record<TermKind | "exclude", string> = {
@@ -95,5 +97,22 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
         />
       </div>
     </fieldset>
+  );
+}
+
+/** Shown under the brand and competitor editors when a name is a single everyday-looking word. */
+export function BroadTermNotice({ terms }: { terms: string[] }) {
+  const broad = broadTerms(terms);
+  if (!broad.length) return null;
+  const quoted = broad.slice(0, 3).map((term) => `“${term}”`).join(", ");
+  const example = broad[0];
+  return (
+    <Notice tone="warn">
+      <p className="m-0 text-sm">
+        {quoted} {broad.length === 1 ? "is a single word, so it" : "are single words, so they"} will also match posts that are not about you.
+        Add the way people write {broad.length === 1 ? "it" : "them"} in context, such as “{example} app” or your domain, and put unrelated
+        meanings under <span className="font-medium">Ignore posts containing</span>.
+      </p>
+    </Notice>
   );
 }

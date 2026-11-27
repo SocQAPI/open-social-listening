@@ -34,3 +34,12 @@ export function isExcluded(mention: Pick<MentionInput, "title" | "text" | "autho
   const haystack = `${mention.title ?? ""} ${mention.text ?? ""} ${mention.authorHandle ?? ""}`.toLowerCase();
   return needles.some((needle) => haystack.includes(needle));
 }
+
+/**
+ * Terms that are one plain word ("Obsidian", "Linear"). Searches for them also return posts about the
+ * everyday meaning, so the UI nudges for a more specific variant and exclude terms. Handles, domains,
+ * multi-word names and names with digits are specific enough already.
+ */
+export function broadTerms(terms: string[]): string[] {
+  return terms.map((term) => term.trim()).filter((term) => /^\p{L}+$/u.test(term));
+}

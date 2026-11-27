@@ -139,7 +139,8 @@ export async function seedDemoIfEmpty(db: Db): Promise<boolean> {
       matchedTerm: termFor(entry),
       termKind: entry.kind,
       competitorName: entry.kind === "competitor" ? (entry.competitor ?? null) : null,
-      sentiment: entry.sentiment,
+      // Only the Web source returns sentiment scores today; the demo shows the same thing a real project would.
+      sentiment: entry.source === "web" ? entry.sentiment : null,
       starred: index === 1 || index === 7,
       read: entry.ago > 3,
       createdAt: at,

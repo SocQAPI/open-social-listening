@@ -11,7 +11,7 @@ import { INTERVALS, SOURCES, defaultSources, draftEstimate, searchCost, suggeste
 import { Button } from "@/components/ui/button";
 import { Field, Notice, Skeleton, TextInput } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
-import { TermEditor } from "@/components/ui/term-editor";
+import { BroadTermNotice, TermEditor } from "@/components/ui/term-editor";
 import { useToast } from "@/components/ui/toast";
 import { Logo } from "@/components/shell/logo";
 import type { SettingsSnapshot } from "@/components/shell/project-context";
@@ -178,7 +178,7 @@ export function OnboardingView() {
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <a href={SIGNUP_URL} target="_blank" rel="noopener" className="font-medium">
-                No key yet? Create a free SocQ account
+                No key yet? Get one from SocQ
               </a>
               {configured ? (
                 <Button size="lg" variant="primary" onClick={() => setStep(2)} icon={<ArrowRight aria-hidden="true" className="size-4" />}>
@@ -204,6 +204,7 @@ export function OnboardingView() {
             </Field>
             <TermEditor kind="brand" title="Your brand" hint="Names and handles people use for you. Press Enter after each." values={draft.brandTerms} onChange={(v) => update({ brandTerms: v, name: draft.name || v[0] || "" })} placeholder="e.g. Acme Notes" />
             <TermEditor kind="competitor" title="Competitors" hint="Tracked separately so you can compare share of voice." values={draft.competitorNames} onChange={(v) => update({ competitorNames: v })} placeholder="Competitor name" max={10} />
+            <BroadTermNotice terms={[...draft.brandTerms, ...draft.competitorNames]} />
             <TermEditor kind="keyword" title="Topics" hint="Category words where buyers ask for recommendations." values={draft.keywords} onChange={(v) => update({ keywords: v })} placeholder="e.g. markdown notes app" />
             <TermEditor kind="exclude" title="Ignore posts containing" hint="Filters out look-alike names. Not searched, so free." values={draft.excludeTerms} onChange={(v) => update({ excludeTerms: v })} placeholder="Word to ignore" />
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">

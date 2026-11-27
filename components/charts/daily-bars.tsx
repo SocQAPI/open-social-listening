@@ -42,15 +42,16 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
   return (
     <figure className="m-0">
       <div className="relative mt-3.5" style={{ height: PLOT_H + 44 }}>
-        <div className="absolute inset-x-0 top-2 flex flex-col justify-between" style={{ height: PLOT_H }} aria-hidden="true">
+        <div className="absolute inset-x-0 top-2" style={{ height: PLOT_H }} aria-hidden="true">
           {ticks.map((t, i) => (
-            <div key={t} className="flex items-center gap-2">
+            // Centred on the exact value, so the baseline is where the columns end.
+            <div key={t} className="absolute inset-x-0 flex -translate-y-1/2 items-center gap-2" style={{ top: `${(1 - t / max) * 100}%` }}>
               <span className="tabular w-8 text-right text-xs text-ink-4">{formatInt(t)}</span>
               <span className={cn("h-px flex-1", i === ticks.length - 1 ? "bg-line-strong" : "bg-track")} />
             </div>
           ))}
         </div>
-        <div className="absolute right-0 left-10 top-2 grid gap-x-0.5" style={{ ...cols, height: PLOT_H }} onMouseLeave={() => setHover(null)}>
+        <div className="absolute right-0 left-10 top-2 grid gap-x-0.5" style={{ ...cols, gridTemplateRows: "minmax(0, 1fr)", height: PLOT_H }} onMouseLeave={() => setHover(null)}>
           {data.map((d, i) => {
             const h = Math.round((d.count / max) * PLOT_H);
             const active = hover === i;
@@ -65,7 +66,10 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
                 aria-label={`${shortDate(d.date)}: ${d.count} mentions`}
               >
                 {d.count === peak && peak > 0 && !active && (
-                  <span className="tabular mb-1 text-xs font-semibold text-ink">{formatInt(d.count)}</span>
+                  // Out of the flow: a label inside the column would make it taller than the plot and push every column down.
+                  <span className="tabular absolute left-1/2 -translate-x-1/2 text-xs font-semibold text-ink" style={{ bottom: Math.max(2, h) + 4 }}>
+                    {formatInt(d.count)}
+                  </span>
                 )}
                 <div
                   className={cn(

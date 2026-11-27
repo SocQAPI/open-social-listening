@@ -215,7 +215,7 @@ export function DashboardView() {
         </Card>
 
         <Card aria-labelledby="sentiment" className="flex flex-col gap-3.5 px-5 py-[18px]">
-          <CardHeader id="sentiment" title="Sentiment" meta={rangeLabel} />
+          <CardHeader id="sentiment" title="Sentiment" meta={`Web & forums · ${rangeLabel}`} />
           {s && scored === 0 ? (
             <p className="m-0 text-ink-3">
               No sentiment scores in this period. Today only the Web source returns sentiment; scoring for every source is planned.

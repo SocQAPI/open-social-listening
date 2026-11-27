@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { creditsToUsd, estimateMonthlyCredits, estimateRunCredits, runsPerMonth } from "@/lib/cost";
-import { expandTerms, isExcluded } from "@/lib/terms";
+import { broadTerms, expandTerms, isExcluded } from "@/lib/terms";
 
 const only = (id: string, resultsLimit = 20) => ({
   reddit: { enabled: false },
@@ -73,5 +73,10 @@ describe("terms", () => {
   it("excludes mentions containing an exclude term", () => {
     expect(isExcluded({ title: "We're HIRING", text: null, authorHandle: null }, ["hiring"])).toBe(true);
     expect(isExcluded({ title: "Great app", text: null, authorHandle: null }, ["hiring"])).toBe(false);
+  });
+
+  it("flags single plain words as broad, not handles, domains or phrases", () => {
+    expect(broadTerms(["Obsidian", " linear ", "Café"])).toEqual(["Obsidian", "linear", "Café"]);
+    expect(broadTerms(["@obsidian", "obsidian.md", "Obsidian app", "Web3", "Globex-Docs", ""])).toEqual([]);
   });
 });
