@@ -28,7 +28,9 @@ COPY --from=build /app/node_modules/@libsql ./node_modules/@libsql
 COPY --from=build /app/node_modules/@neon-rs ./node_modules/@neon-rs
 COPY --from=build /app/node_modules/detect-libc ./node_modules/detect-libc
 RUN mkdir -p /app/data && chown -R node:node /app/data
-USER node
 VOLUME ["/app/data"]
 EXPOSE 3000
-CMD ["node", "server.js"]
+# The container starts as root only to hand /app/data to the unprivileged `node` user: a bind mount such as
+# ./data is created by Docker as root, and node could not write the database there. The server itself always
+# runs as node. Started with --user, the container skips the hand-over.
+CMD ["sh", "-c", "if [ \"$(id -u)\" = 0 ]; then chown -R node:node /app/data && exec setpriv --reuid=node --regid=node --init-groups node server.js; else exec node server.js; fi"]

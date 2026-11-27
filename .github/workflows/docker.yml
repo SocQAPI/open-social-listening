@@ -1,0 +1,140 @@
+name: Docker image
+
+# Publishes ghcr.io/socqapi/open-social-listening for x86-64 and ARM64:
+#   main     -> latest, sha-<short>
+#   v1.2.3   -> 1.2.3, 1.2, 1
+# Before pushing, the image is started the way the deployment guide (docs/deploy.md) does it.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths: [Dockerfile, docker-compose.yml, .github/workflows/docker.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/socqapi/open-social-listening
+
+jobs:
+  guide-check:
+    name: Deployment guide check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image under the published name
+        run: docker build -t "$IMAGE:latest" .
+      - name: Start it with the compose file and a fresh ./data
+        run: |
+          mkdir -p /tmp/osl && cp docker-compose.yml /tmp/osl/
+          cd /tmp/osl
+          # The guide's .env: a password, nothing else.
+          echo "OSL_PASSWORD=guide-check" > .env
+          docker compose up -d --pull never
+          for i in $(seq 1 40); do
+            if curl -fsS -u x:guide-check http://localhost:3000/api/settings > /dev/null; then break; fi
+            sleep 2
+          done
+          docker compose ps
+      - name: The database is written to ./data by the unprivileged user
+        run: |
+          cd /tmp/osl
+          ls -la data
+          test -s data/osl.db
+          uid=$(docker compose exec -T open-social-listening sh -c 'grep ^Uid /proc/1/status' | awk '{print $2}')
+          echo "server uid: $uid"
+          test "$uid" = "1000"
+      - name: The password protects pages and the API
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/projects)" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -u x:guide-check http://localhost:3000/p/1/inbox)" = "200"
+      - name: HTTPS section - Caddy in front, port 3000 on localhost only
+        run: |
+          cd /tmp/osl
+          # Same override as the guide, with a plain-HTTP site address because the runner has no domain.
+          cat > docker-compose.override.yml <<'YAML'
+          services:
+            open-social-listening:
+              ports: !override
+                - "127.0.0.1:3000:3000"
+            caddy:
+              image: caddy:2
+              restart: unless-stopped
+              ports:
+                - "80:80"
+                - "443:443"
+                - "443:443/udp"
+              volumes:
+                - ./Caddyfile:/etc/caddy/Caddyfile:ro
+                - caddy-data:/data
+                - caddy-config:/config
+          volumes:
+            caddy-data:
+            caddy-config:
+          YAML
+          printf 'http://localhost {\n\treverse_proxy open-social-listening:3000\n}\n' > Caddyfile
+          docker compose up -d --pull never open-social-listening
+          docker compose up -d caddy
+          for i in $(seq 1 30); do
+            if curl -fsS -u x:guide-check http://localhost/api/settings > /dev/null; then break; fi
+            sleep 2
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' -u x:guide-check http://localhost/p/1/inbox)" = "200"
+          docker compose port open-social-listening 3000 | grep -q '^127.0.0.1:'
+      - name: Backup command from the guide
+        run: |
+          cd /tmp/osl
+          mkdir -p backups
+          docker compose stop open-social-listening
+          tar czf "backups/osl-$(date +%F).tgz" data
+          docker compose start open-social-listening
+          tar tzf backups/osl-*.tgz | grep -q 'data/osl.db'
+      - name: Logs
+        if: always()
+        run: cd /tmp/osl && docker compose logs --no-color
+
+  publish:
+    name: Publish to GHCR
+    needs: guide-check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          labels: |
+            org.opencontainers.image.title=Open Social Listening
+            org.opencontainers.image.description=Self-hosted social listening for Reddit, X, YouTube, TikTok, news and the web, powered by the SocQ API.
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/SocQAPI/open-social-listening/blob/main/docs/deploy.md
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
