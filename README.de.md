@@ -32,6 +32,8 @@ gesammelt, die pro Ergebnis abrechnet. Eine kleine Marke, die einmal am Tag gepr
   pausiert das Projekt, statt mehr auszugeben. Ebenso wird es pausiert, wenn die Credits aufgebraucht sind oder der
   Schlüssel widerrufen wurde.
 - **Export.** CSV oder JSON jeder gefilterten Ansicht, oder Sie lesen alles über die JSON-API aus.
+- **Fünf Oberflächensprachen.** English, 简体中文, 日本語, Deutsch und Bahasa Indonesia. Die App folgt der Browsersprache
+  und merkt sich Ihre Wahl.
 - **Sentiment für Web- und Forenerwähnungen.** Erwähnungen aus der Quelle „Web“ erhalten eine positive, neutrale
   oder negative Bewertung. Die Bewertung von Social-Media-Beiträgen steht auf der Roadmap; bis dahin erscheinen sie
   als „Not scored“.

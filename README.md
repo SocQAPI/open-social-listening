@@ -28,6 +28,8 @@ which bills per result, so a small brand checked once a day costs a few dollars 
 - **Budget guard.** Each project has a monthly credit budget. A run that would go over it pauses the project
   instead of spending more. Runs out of credits or with a revoked key pause it too.
 - **Export.** CSV or JSON of any filtered view, or read everything through the JSON API.
+- **Five interface languages.** English, 简体中文, 日本語, Deutsch and Bahasa Indonesia. The app follows the browser
+  language and remembers your choice.
 - **Sentiment on web and forum mentions.** Mentions from the Web source come with positive, neutral or negative
   scores. Scoring for social posts is on the roadmap; until then they show as "Not scored".
 

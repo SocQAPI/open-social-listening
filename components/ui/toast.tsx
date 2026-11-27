@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/ui/cn";
+import { useI18n } from "@/lib/i18n";
 
 type Tone = "ok" | "info" | "error";
 
@@ -20,6 +21,7 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const { m } = useI18n();
   const seq = useRef(0);
 
   const dismiss = useCallback((id: number) => setToasts((all) => all.filter((t) => t.id !== id)), []);
@@ -49,7 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <Icon aria-hidden="true" className={cn("mt-0.5 size-4 shrink-0", t.tone === "error" ? "text-accent" : "text-white/80")} />
               <span className="flex-1">{t.text}</span>
-              <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss" className="-m-1 cursor-pointer rounded p-1 text-white/70 hover:text-white">
+              <button type="button" onClick={() => dismiss(t.id)} aria-label={m.common.dismiss} className="-m-1 cursor-pointer rounded p-1 text-white/70 hover:text-white">
                 <X aria-hidden="true" className="size-4" />
               </button>
             </div>

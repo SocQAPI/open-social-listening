@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Inbox, Plus, SlidersHorizontal } from "lucide-react";
+import { BarChart3, Globe, Inbox, Plus, SlidersHorizontal } from "lucide-react";
+import { LOCALES, useI18n, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/ui/cn";
-import { formatInt } from "@/lib/ui/format";
 import { Meter, Skeleton } from "@/components/ui/primitives";
 import { Logo } from "./logo";
 
@@ -29,25 +29,53 @@ export interface SidebarProps {
 const REPO_URL = "https://github.com/SocQAPI/open-social-listening";
 const SOCQ_URL = "https://socq.ai/?utm_source=open-social-listening&utm_medium=app&utm_campaign=sidebar";
 
+/** Interface language picker; the choice is remembered in this browser. */
+export function LanguageSelect({ className }: { className?: string }) {
+  const { locale, setLocale, m } = useI18n();
+  return (
+    <label className={cn("relative inline-flex items-center", className)}>
+      <span className="sr-only">{m.common.language}</span>
+      <Globe aria-hidden="true" className="pointer-events-none absolute left-2 size-3.5 text-ink-3" />
+      <select
+        value={locale}
+        onChange={(e) => setLocale(e.target.value as Locale)}
+        className="min-h-8 cursor-pointer appearance-none rounded-lg border border-line bg-surface pr-2 pl-7 text-xs font-medium text-ink-2 hover:text-ink focus:border-ink focus:outline-none"
+      >
+        {LOCALES.map((l) => (
+          <option key={l.code} value={l.code} lang={l.code}>
+            {l.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function Sidebar({ projectId, projects, unread, balance, monthUsed, monthBudget, connected }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { m, fmt } = useI18n();
+  const formatInt = fmt.int;
   const base = `/p/${projectId}`;
   const nav = [
-    { href: `${base}/inbox`, label: "Inbox", icon: Inbox, badge: unread },
-    { href: `${base}/dashboard`, label: "Dashboard", icon: BarChart3, badge: null },
-    { href: `${base}/settings`, label: "Settings", icon: SlidersHorizontal, badge: null },
+    { href: `${base}/inbox`, label: m.shell.inbox, icon: Inbox, badge: unread },
+    { href: `${base}/dashboard`, label: m.shell.dashboard, icon: BarChart3, badge: null },
+    { href: `${base}/settings`, label: m.shell.settings, icon: SlidersHorizontal, badge: null },
   ];
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={m.shell.primaryNav}
       className="flex flex-[1_1_240px] flex-col gap-3 border-b border-line bg-bg px-4 py-3 md:gap-6 md:border-r md:border-b-0 md:py-5"
     >
-      <Logo />
+      {/* Phones: language next to the logo. Desktop: at the bottom, so the logo keeps one line in the narrow sidebar. */}
+      <div className="flex items-center justify-between gap-2">
+        <Logo />
+        <LanguageSelect className="md:hidden" />
+      </div>
 
       <label className="relative">
-        <span className="sr-only">Project</span>
+        <span className="sr-only">{m.shell.project}</span>
         <select
           value={projectId}
           onChange={(e) => router.push(`/p/${e.target.value}/inbox`)}
@@ -78,7 +106,8 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
                 active ? "bg-surface font-semibold text-ink shadow-[0_0_0_1px_var(--color-line)]" : "font-medium text-ink-2 hover:bg-subtle hover:text-ink",
               )}
             >
-              <Icon aria-hidden="true" className={cn("size-[18px]", active && "text-accent")} strokeWidth={2} />
+              {/* Text only on phones: three translated labels plus icons do not fit 390px (German). */}
+              <Icon aria-hidden="true" className={cn("size-[18px] max-sm:hidden", active && "text-accent")} strokeWidth={2} />
               <span className="md:flex-1">{item.label}</span>
               {item.badge ? <span className="tabular rounded-full bg-ink px-2 text-xs font-semibold text-white">{formatInt(item.badge)}</span> : null}
             </Link>
@@ -87,7 +116,7 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
       </div>
 
       <div className="hidden flex-col gap-1.5 md:flex">
-        <span className="px-3 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">Projects</span>
+        <span className="px-3 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">{m.shell.projects}</span>
         {projects === null ? (
           <div className="flex flex-col gap-2 px-3 py-1">
             <Skeleton className="h-4 w-28" />
@@ -102,13 +131,13 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
             >
               <span aria-hidden="true" className={cn("size-2 rounded-full", p.paused ? "bg-neu" : "bg-brand")} />
               <span className="flex-1 truncate">{p.name}</span>
-              {p.paused && <span className="text-xs text-ink-4">Paused</span>}
+              {p.paused && <span className="text-xs text-ink-4">{m.shell.paused}</span>}
             </Link>
           ))
         )}
         <Link href="/onboarding?new=1" className="flex min-h-9 items-center gap-2.5 rounded-lg px-3 font-medium text-ink-3 no-underline hover:bg-subtle hover:text-ink">
           <Plus aria-hidden="true" className="size-4" />
-          New project
+          {m.shell.newProject}
         </Link>
       </div>
 
@@ -116,36 +145,37 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
 
       {connected === false ? (
         <div className="hidden flex-col gap-2 rounded-xl border border-line bg-surface p-3.5 md:flex">
-          <span className="text-[13px] text-ink-2">Connect a SocQ API key to track your own brand.</span>
+          <span className="text-[13px] text-ink-2">{m.shell.connectPrompt}</span>
           <Link href="/onboarding" className="inline-flex min-h-10 items-center justify-center rounded-[10px] bg-accent-strong px-3 font-semibold text-white no-underline transition-colors hover:bg-accent-hover">
-            Connect SocQ
+            {m.shell.connectSocq}
           </Link>
         </div>
       ) : (
       <div className="hidden flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5 md:flex">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs font-medium text-ink-3">SocQ balance</span>
-          {balance === null ? <Skeleton className="h-5 w-16" /> : <span className="font-display tabular text-base font-semibold">{formatInt(balance)} cr</span>}
+          <span className="text-xs font-medium text-ink-3">{m.shell.balance}</span>
+          {balance === null ? <Skeleton className="h-5 w-16" /> : <span className="font-display tabular text-base font-semibold">{fmt.credits(balance)}</span>}
         </div>
         {monthBudget !== null && monthUsed !== null && (
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between text-xs text-ink-3">
-              <span>This month</span>
+              <span>{m.shell.thisMonth}</span>
               <span className="tabular">
                 {formatInt(monthUsed)} / {formatInt(monthBudget)}
               </span>
             </div>
-            <Meter value={monthUsed} max={monthBudget} label="Monthly budget used" />
+            <Meter value={monthUsed} max={monthBudget} label={m.shell.budgetUsed} />
           </div>
         )}
         <a href="https://socq.ai/pricing?utm_source=open-social-listening&utm_medium=app&utm_campaign=topup" target="_blank" rel="noopener" className="text-[13px] font-medium">
-          Top up on socq.ai
+          {m.shell.topUp}
         </a>
       </div>
       )}
+      <LanguageSelect className="hidden self-start md:inline-flex" />
       <div className="hidden justify-between px-1.5 text-xs md:flex">
         <a href={SOCQ_URL} target="_blank" rel="noopener" className="text-ink-3 hover:text-ink">
-          Powered by SocQ
+          {m.shell.poweredBy}
         </a>
         <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-ink">
           v0.1 · GitHub

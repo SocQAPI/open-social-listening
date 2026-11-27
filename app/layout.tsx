@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
+import { I18nProvider } from "@/lib/i18n";
 import { BASE_PATH, STATIC_DEMO } from "@/lib/demo/static";
 import "./globals.css";
 
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${grotesk.variable}`}>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <I18nProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </I18nProvider>
       </body>
     </html>
   );

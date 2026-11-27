@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api, errorText } from "@/lib/ui/api";
 import { LogoMark } from "@/components/shell/logo";
 import { Spinner } from "@/components/ui/spinner";
+import { useI18n } from "@/lib/i18n";
 
 interface ProjectSummary {
   id: number;
@@ -15,6 +16,7 @@ interface ProjectSummary {
 export default function Home() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const { m } = useI18n();
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +46,7 @@ export default function Home() {
       ) : (
         <span className="inline-flex items-center gap-2">
           <Spinner className="size-4" />
-          Loading…
+          {m.common.loading}
         </span>
       )}
     </main>

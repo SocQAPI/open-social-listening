@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ProjectDTO } from "@/lib/dto";
+import { currentMessages } from "@/lib/i18n";
 import { api, errorText, useApi } from "@/lib/ui/api";
 import { useToast } from "@/components/ui/toast";
 
@@ -98,7 +99,7 @@ export function ProjectProvider({ projectId, children }: { projectId: number; ch
           if (current.paused && current.pausedReason) {
             toast(pausedText(current.pausedReason), "error");
           } else {
-            toast(added ? `Run finished · ${added} new mention${added === 1 ? "" : "s"}` : "Run finished · nothing new this time", "ok");
+            toast(currentMessages().shell.runFinished(added), "ok");
           }
         }
       } catch {
@@ -113,7 +114,7 @@ export function ProjectProvider({ projectId, children }: { projectId: number; ch
     try {
       await api(`/api/projects/${projectId}/run`, { method: "POST" });
       setRunning(true);
-      toast("Run started. New mentions will appear here as soon as it finishes.", "info");
+      toast(currentMessages().shell.runStarted, "info");
     } catch (error) {
       toast(errorText(error), "error");
     }
@@ -140,14 +141,15 @@ export function ProjectProvider({ projectId, children }: { projectId: number; ch
 }
 
 export function pausedText(reason: string): string {
+  const m = currentMessages().shell;
   switch (reason) {
     case "budget":
-      return "Paused: this month's credit budget is used up. Raise the budget in Settings to resume.";
+      return m.pausedBudget;
     case "credits":
-      return "Paused: your SocQ balance ran out. Top up on socq.ai, then resume in Settings.";
+      return m.pausedCredits;
     case "auth":
-      return "Paused: SocQ rejected the API key. Replace it in Settings.";
+      return m.pausedAuth;
     default:
-      return "Paused. Resume it in Settings.";
+      return m.pausedManual;
   }
 }

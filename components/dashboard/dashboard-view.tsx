@@ -5,12 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
-import { creditsToUsd, formatDateTime, formatInt } from "@/lib/ui/format";
+import { useI18n } from "@/lib/i18n";
+import { creditsToUsd } from "@/lib/ui/format";
 import { DailyBars } from "@/components/charts/daily-bars";
 import { HBars, StackedShare, type ShareSegment } from "@/components/charts/share";
 import { Card, CardHeader, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
-import { sourceLabel } from "@/components/ui/tokens";
 import { PageHeader, ProjectBanner, RunButton } from "@/components/shell/page-header";
 import { useProject } from "@/components/shell/project-context";
 
@@ -29,6 +29,7 @@ interface Stats {
 /** Competitors take categorical slots 2 and 3; any further ones fold into "Other" (never a generated hue). */
 const VOICE_COLORS = ["bg-brand", "bg-comp-1", "bg-comp-2"];
 
+/** Id of the source with the most mentions, or null. */
 function topSource(bySource: Record<string, number>): string | null {
   let best: string | null = null;
   let max = 0;
@@ -38,7 +39,7 @@ function topSource(bySource: Record<string, number>): string | null {
       max = n;
     }
   }
-  return best ? sourceLabel(best) : null;
+  return best;
 }
 
 function Kpi({ label, value, note }: { label: string; value: string; note: string }) {
@@ -60,6 +61,10 @@ const statusPill: Record<string, string> = {
 
 export function DashboardView() {
   const { projectId, project, runVersion } = useProject();
+  const { m: t, fmt } = useI18n();
+  const d = t.dashboard;
+  const formatInt = fmt.int;
+  const sourceName = (id: string | null) => (id ? (t.sources[id] ?? id) : null);
   const [days, setDays] = useState<7 | 14 | 30>(14);
   const stats = useApi<Stats>(`/api/stats?projectId=${projectId}&days=${days}`);
   const s = stats.data;
@@ -87,20 +92,20 @@ export function DashboardView() {
     const comps = [...s.shareOfVoice.filter((v) => v.kind === "competitor")].sort((a, b) => b.count - a.count);
     const list = [...brand, ...comps.slice(0, 2)].map((v, i) => ({
       key: `${v.kind}:${v.name}`,
-      label: v.kind === "brand" ? `${v.name} (you)` : v.name,
+      label: v.kind === "brand" ? d.you(v.name) : v.name,
       value: v.count,
       color: VOICE_COLORS[i] ?? "bg-neu-bar",
     }));
     const rest = comps.slice(2).reduce((a, v) => a + v.count, 0);
-    if (comps.length > 2) list.push({ key: "other", label: "Other competitors", value: rest, color: "bg-neu-bar" });
+    if (comps.length > 2) list.push({ key: "other", label: d.otherCompetitors, value: rest, color: "bg-neu-bar" });
     return list;
-  }, [s]);
+  }, [s, d]);
 
   const sources = s
     ? Object.entries(s.bySource)
         .filter(([, n]) => n > 0)
         .sort((a, b) => b[1] - a[1])
-        .map(([id, n]) => ({ key: id, label: sourceLabel(id), value: n }))
+        .map(([id, n]) => ({ key: id, label: sourceName(id) ?? id, value: n }))
     : [];
 
   // A percentage over a tiny base ("+4900%") says nothing; compare raw counts until the base is meaningful.
@@ -108,30 +113,30 @@ export function DashboardView() {
   const changeNote = !s
     ? ""
     : change !== null
-      ? `${change >= 0 ? "+" : "−"}${Math.abs(change)}% vs the ${days} days before`
+      ? d.changePct(`${change >= 0 ? "+" : "−"}${Math.abs(change)}`, days)
       : s.totals.previousPeriod > 0
-        ? `vs ${formatInt(s.totals.previousPeriod)} in the ${days} days before`
-        : "No earlier data to compare";
+        ? d.changeAbs(formatInt(s.totals.previousPeriod), days)
+        : d.noEarlier;
   const brandVoice = s?.shareOfVoice.find((v) => v.kind === "brand");
   const scored = s ? s.sentiment.positive + s.sentiment.neutral + s.sentiment.negative : 0;
   const budget = s?.credits.budget ?? 0;
   const overBudget = s && budget > 0 && s.credits.estimatedMonthly > budget;
-  const rangeLabel = days === 7 ? "Last 7 days" : days === 14 ? "Last 14 days" : "Last 30 days";
+  const rangeLabel = d.ranges[days];
 
   return (
     <>
       <PageHeader
-        title="Dashboard"
+        title={d.title}
         actions={
           <>
             <Segmented<7 | 14 | 30>
-              label="Date range"
+              label={d.dateRange}
               value={days}
               onChange={setDays}
               options={[
-                { value: 7, label: "7 days" },
-                { value: 14, label: "14 days" },
-                { value: 30, label: "30 days" },
+                { value: 7, label: d.days(7) },
+                { value: 14, label: d.days(14) },
+                { value: 30, label: d.days(30) },
               ]}
             />
             <RunButton />
@@ -146,37 +151,38 @@ export function DashboardView() {
             <TrendingUp aria-hidden="true" className="size-[18px] text-accent-text" />
           </span>
           <p className="m-0 flex-[1_1_320px]">
-            <strong>Spike on {new Date(`${spike.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}:</strong> {formatInt(spike.total)} mentions,{" "}
-            {spike.ratio.toFixed(1)}× the average for this period{spike.top ? `, mostly from ${spike.top}` : ""}.
+            <strong>{d.spikeTitle(fmt.shortDate(new Date(`${spike.date}T00:00:00`)))}</strong>
+            {t.common.sentenceGap}
+            {d.spikeBody(formatInt(spike.total), spike.ratio.toFixed(1), sourceName(spike.top))}
           </p>
           <Link href={`/p/${projectId}/inbox`} className="font-medium">
-            View mentions
+            {d.viewMentions}
           </Link>
         </div>
       )}
 
-      <section aria-label="Key numbers" className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+      <section aria-label={d.keyNumbers} className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
         {s ? (
           <>
             <Kpi
-              label={`Mentions, ${rangeLabel.toLowerCase()}`}
+              label={d.mentionsKpi(days)}
               value={formatInt(s.totals.mentions)}
               note={changeNote}
             />
             <Kpi
-              label="Your share of voice"
+              label={d.shareKpi}
               value={brandVoice ? `${Math.round(brandVoice.share * 100)}%` : "—"}
-              note={s.shareOfVoice.length > 1 ? `Against ${s.shareOfVoice.length - 1} competitor${s.shareOfVoice.length > 2 ? "s" : ""}` : "Add competitors to compare"}
+              note={s.shareOfVoice.length > 1 ? d.against(s.shareOfVoice.length - 1) : d.addCompetitors}
             />
             <Kpi
-              label="Negative mentions"
+              label={d.negativeKpi}
               value={formatInt(s.sentiment.negative)}
-              note={scored ? `${Math.round((s.sentiment.negative / scored) * 100)}% of ${formatInt(scored)} scored mentions` : "No sentiment scores yet"}
+              note={scored ? d.negativeNote(Math.round((s.sentiment.negative / scored) * 100), formatInt(scored)) : d.noSentiment}
             />
             <Kpi
-              label="Credits this month"
+              label={d.creditsKpi}
               value={formatInt(s.credits.thisMonth)}
-              note={`${budget > 0 ? `of a ${formatInt(budget)} budget · ` : ""}about ${creditsToUsd(s.credits.thisMonth)}`}
+              note={d.creditsNote(budget > 0 ? formatInt(budget) : null, creditsToUsd(s.credits.thisMonth))}
             />
           </>
         ) : (
@@ -191,12 +197,12 @@ export function DashboardView() {
       </section>
 
       <Card aria-labelledby="perday" className="px-5 pt-[18px] pb-3.5">
-        <CardHeader id="perday" title="Mentions per day" meta="All sources · hover a day for details" />
+        <CardHeader id="perday" title={d.perDay} meta={d.perDayMeta} />
         {s ? (
           s.totals.mentions === 0 ? (
-            <EmptyState title="No mentions in this period yet">Runs fill this chart as they find posts.</EmptyState>
+            <EmptyState title={d.emptyPeriod}>{d.emptyPeriodNote}</EmptyState>
           ) : (
-            <DailyBars label={`Mentions per day, ${rangeLabel.toLowerCase()}`} data={s.daily.map((d) => ({ date: d.date, count: d.total, topSource: topSource(d.bySource) }))} />
+            <DailyBars label={d.perDayLabel(days)} data={s.daily.map((day) => ({ date: day.date, count: day.total, topSource: sourceName(topSource(day.bySource)) }))} />
           )
         ) : (
           <Skeleton className="mt-4 h-56 w-full" />
@@ -205,35 +211,31 @@ export function DashboardView() {
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
         <Card aria-labelledby="sov" className="flex flex-col gap-3.5 px-5 py-[18px]">
-          <CardHeader id="sov" title="Share of voice" meta={rangeLabel} />
-          {s ? voices.length ? <StackedShare label="Share of voice" segments={voices} /> : <p className="m-0 text-ink-3">Add a brand term and competitors to compare.</p> : <Skeleton className="h-24 w-full" />}
+          <CardHeader id="sov" title={d.shareOfVoice} meta={rangeLabel} />
+          {s ? voices.length ? <StackedShare label={d.shareOfVoice} segments={voices} /> : <p className="m-0 text-ink-3">{d.addBrand}</p> : <Skeleton className="h-24 w-full" />}
         </Card>
 
         <Card aria-labelledby="bysource" className="flex flex-col gap-3 px-5 py-[18px]">
-          <CardHeader id="bysource" title="By source" meta={rangeLabel} />
-          {s ? sources.length ? <HBars rows={sources} /> : <p className="m-0 text-ink-3">Nothing collected yet.</p> : <Skeleton className="h-32 w-full" />}
+          <CardHeader id="bysource" title={d.bySource} meta={rangeLabel} />
+          {s ? sources.length ? <HBars rows={sources} /> : <p className="m-0 text-ink-3">{d.nothingYet}</p> : <Skeleton className="h-32 w-full" />}
         </Card>
 
         <Card aria-labelledby="sentiment" className="flex flex-col gap-3.5 px-5 py-[18px]">
-          <CardHeader id="sentiment" title="Sentiment" meta={`Web & forums · ${rangeLabel}`} />
+          <CardHeader id="sentiment" title={d.sentiment} meta={d.sentimentMeta(rangeLabel)} />
           {s && scored === 0 ? (
-            <p className="m-0 text-ink-3">
-              No sentiment scores in this period. Today only the Web source returns sentiment; scoring for every source is planned.
-            </p>
+            <p className="m-0 text-ink-3">{d.noSentimentPeriod}</p>
           ) : s ? (
             <>
               <StackedShare
-                label="Sentiment"
+                label={d.sentiment}
                 segments={[
-                  { key: "positive", label: "Positive", value: s.sentiment.positive, color: "bg-pos" },
-                  { key: "neutral", label: "Neutral", value: s.sentiment.neutral, color: "bg-neu-bar" },
-                  { key: "negative", label: "Negative", value: s.sentiment.negative, color: "bg-neg" },
+                  { key: "positive", label: t.sentiment.positive, value: s.sentiment.positive, color: "bg-pos" },
+                  { key: "neutral", label: t.sentiment.neutral, value: s.sentiment.neutral, color: "bg-neu-bar" },
+                  { key: "negative", label: t.sentiment.negative, value: s.sentiment.negative, color: "bg-neg" },
                 ]}
               />
               {s.sentiment.unknown > 0 && (
-                <p className="m-0 text-[13px] text-ink-3">
-                  {formatInt(s.sentiment.unknown)} mentions have no score. Today only the Web source returns sentiment; scoring for every source is planned.
-                </p>
+                <p className="m-0 text-[13px] text-ink-3">{d.unscored(formatInt(s.sentiment.unknown))}</p>
               )}
             </>
           ) : (
@@ -245,39 +247,40 @@ export function DashboardView() {
       <Card aria-labelledby="runs" className="px-5 py-[18px]">
         <CardHeader
           id="runs"
-          title="Recent runs"
-          meta={s ? `${formatInt(s.credits.thisMonth)} credits this month · about ${creditsToUsd(s.credits.thisMonth)}` : undefined}
+          title={d.recentRuns}
+          meta={s ? d.runsMeta(formatInt(s.credits.thisMonth), creditsToUsd(s.credits.thisMonth)) : undefined}
         />
         {overBudget && s && (
           <p className="m-0 mt-3 rounded-[10px] bg-accent-tint px-3.5 py-2.5 text-[13px] text-[#7a2e0e]">
-            The current setup needs about {formatInt(s.credits.estimatedMonthly)} credits a month, more than the {formatInt(budget)} budget. Runs pause once the budget is reached.{" "}
+            {d.overBudget(formatInt(s.credits.estimatedMonthly), formatInt(budget))}
+            {t.common.sentenceGap}
             <Link href={`/p/${projectId}/settings`} className="font-semibold text-[#7a2e0e]">
-              Adjust in Settings
+              {d.adjust}
             </Link>
           </p>
         )}
         <div className="mt-2 overflow-x-auto">
           {s && s.recentRuns.length === 0 ? (
-            <p className="m-0 py-4 text-ink-3">{project?.isDemo ? "The demo project does not run." : "No runs yet."}</p>
+            <p className="m-0 py-4 text-ink-3">{project?.isDemo ? d.demoNoRuns : d.noRuns}</p>
           ) : (
             <table className="tabular w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs text-ink-3">
-                  <th scope="col" className="py-2 font-medium">Started</th>
-                  <th scope="col" className="py-2 text-right font-medium">New mentions</th>
-                  <th scope="col" className="py-2 text-right font-medium">Credits</th>
-                  <th scope="col" className="py-2 pl-4 font-medium">Status</th>
+                  <th scope="col" className="py-2 font-medium">{d.started}</th>
+                  <th scope="col" className="py-2 text-right font-medium">{d.newMentions}</th>
+                  <th scope="col" className="py-2 text-right font-medium">{d.credits}</th>
+                  <th scope="col" className="py-2 pl-4 font-medium">{d.status}</th>
                 </tr>
               </thead>
               <tbody>
                 {(s?.recentRuns ?? []).map((r) => (
                   <tr key={r.id} className="border-t border-track">
-                    <td className="py-2.5">{formatDateTime(r.startedAt)}</td>
+                    <td className="py-2.5">{fmt.dateTime(r.startedAt)}</td>
                     <td className="py-2.5 text-right">{formatInt(r.newMentions)}</td>
                     <td className="py-2.5 text-right">{formatInt(r.creditsUsed)}</td>
                     <td className="py-2.5 pl-4">
-                      <span title={r.error ?? undefined} className={cn("inline-flex min-h-6 items-center rounded-md px-2 text-xs font-semibold capitalize", statusPill[r.status] ?? "bg-subtle text-ink-2")}>
-                        {r.status === "succeeded" ? "Completed" : r.status}
+                      <span title={r.error ?? undefined} className={cn("inline-flex min-h-6 items-center rounded-md px-2 text-xs font-semibold", statusPill[r.status] ?? "bg-subtle text-ink-2")}>
+                        {d.statuses[r.status] ?? r.status}
                       </span>
                     </td>
                   </tr>

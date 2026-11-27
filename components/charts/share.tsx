@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/ui/cn";
-import { formatInt } from "@/lib/ui/format";
+import { useI18n } from "@/lib/i18n";
 
 export interface ShareSegment {
   key: string;
@@ -18,10 +18,12 @@ export interface ShareSegment {
  */
 export function StackedShare({ segments, label }: { segments: ShareSegment[]; label: string }) {
   const [hover, setHover] = useState<string | null>(null);
+  const { m, fmt } = useI18n();
+  const formatInt = fmt.int;
   const total = segments.reduce((a, s) => a + s.value, 0);
   const visible = segments.filter((s) => s.value > 0);
   const pct = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
-  const description = segments.map((s) => `${s.label} ${pct(s.value)} percent`).join(", ");
+  const description = segments.map((s) => m.chart.percentOf(s.label, pct(s.value))).join(", ");
 
   return (
     <div className="flex flex-col gap-3">
@@ -69,6 +71,8 @@ export function StackedShare({ segments, label }: { segments: ShareSegment[]; la
 /** Horizontal single-hue bars with the category name on the left and value at the tip. */
 export function HBars({ rows, colorClass = "bg-brand" }: { rows: { key: string; label: string; value: number }[]; colorClass?: string }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
+  const { fmt } = useI18n();
+  const formatInt = fmt.int;
   return (
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
       {rows.map((r) => (

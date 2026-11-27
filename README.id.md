@@ -31,6 +31,8 @@ yang menagih per hasil, sehingga brand kecil yang dicek sekali sehari hanya meng
 - **Pengaman anggaran.** Setiap proyek punya anggaran kredit bulanan. Eksekusi yang akan melampauinya akan menjeda
   proyek alih-alih terus membelanjakan kredit. Proyek juga dijeda jika kredit habis atau API key dicabut.
 - **Ekspor.** CSV atau JSON dari tampilan apa pun yang sudah difilter, atau baca semuanya melalui JSON API.
+- **Lima bahasa antarmuka.** English, 简体中文, 日本語, Deutsch, dan Bahasa Indonesia. Aplikasi mengikuti bahasa browser
+  dan mengingat pilihan Anda.
 - **Sentimen untuk mention dari web dan forum.** Mention dari sumber Web dilengkapi skor positif, netral, atau
   negatif. Penilaian untuk postingan media sosial masuk dalam roadmap; sampai saat itu postingan tersebut
   ditampilkan sebagai "Not scored" (belum dinilai).

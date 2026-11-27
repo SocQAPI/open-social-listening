@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { api, errorText, useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
-import { creditsToUsd, formatInt } from "@/lib/ui/format";
+import { useI18n } from "@/lib/i18n";
+import { creditsToUsd } from "@/lib/ui/format";
 import { INTERVALS, SOURCES, defaultSources, draftEstimate, searchCost, suggestedBudget, toCompetitors, type ProjectDraft } from "@/lib/ui/draft";
 import { Button } from "@/components/ui/button";
 import { Field, Notice, Skeleton, TextInput } from "@/components/ui/primitives";
@@ -14,15 +15,19 @@ import { Segmented } from "@/components/ui/segmented";
 import { BroadTermNotice, TermEditor } from "@/components/ui/term-editor";
 import { useToast } from "@/components/ui/toast";
 import { Logo } from "@/components/shell/logo";
+import { LanguageSelect } from "@/components/shell/sidebar";
 import type { SettingsSnapshot } from "@/components/shell/project-context";
 
 const SIGNUP_URL = "https://socq.ai/dashboard/api-key?utm_source=open-social-listening&utm_medium=app&utm_campaign=onboarding";
-const STEPS = ["Connect SocQ", "What to track", "Sources and budget"];
 
 export function OnboardingView() {
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
+  const { m: t, fmt } = useI18n();
+  const o = t.onboarding;
+  const p = t.project;
+  const formatInt = fmt.int;
   const settings = useApi<SettingsSnapshot>("/api/settings");
   const projects = useApi<{ items: { id: number; isDemo: boolean }[] }>("/api/projects");
 
@@ -78,7 +83,7 @@ export function OnboardingView() {
   const create = async () => {
     setCreating(true);
     try {
-      const name = draft.name.trim() || draft.brandTerms[0] || "My brand";
+      const name = draft.name.trim() || draft.brandTerms[0] || o.defaultName;
       const project = await api<{ id: number }>("/api/projects", {
         method: "POST",
         json: {
@@ -111,21 +116,24 @@ export function OnboardingView() {
     <div className="min-h-screen bg-bg">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-[18px] sm:px-8">
         <Logo />
-        {(isNew || hasRealProject || projects.data?.items.length) ? (
-          <Link href="/" className="font-medium">
-            {hasRealProject ? "Back to my projects" : "Explore with demo data instead"}
-          </Link>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-4">
+          {(isNew || hasRealProject || projects.data?.items.length) ? (
+            <Link href="/" className="font-medium">
+              {hasRealProject ? o.backToProjects : o.exploreDemo}
+            </Link>
+          ) : null}
+          <LanguageSelect />
+        </div>
       </header>
 
       <main className="mx-auto flex max-w-[760px] flex-col gap-6 px-5 pt-10 pb-16 sm:px-6">
         <div className="flex flex-col gap-1.5">
-          <h1 className="font-display m-0 text-[32px] font-semibold tracking-[-0.02em]">{hasRealProject ? "Set up a new project" : "Set up your first project"}</h1>
-          <p className="m-0 text-[15px] text-ink-3">Three steps, about two minutes. You can change everything later in Settings.</p>
+          <h1 className="font-display m-0 text-[32px] font-semibold tracking-[-0.02em]">{hasRealProject ? o.titleNew : o.titleFirst}</h1>
+          <p className="m-0 text-[15px] text-ink-3">{o.intro}</p>
         </div>
 
-        <ol aria-label="Steps" className="m-0 grid list-none grid-cols-3 gap-2 p-0">
-          {STEPS.map((label, i) => {
+        <ol aria-label={o.stepsLabel} className="m-0 grid list-none grid-cols-3 gap-2 p-0">
+          {o.steps.map((label, i) => {
             const n = i + 1;
             const reached = n <= step;
             return (
@@ -147,21 +155,25 @@ export function OnboardingView() {
           <section key="s1" aria-labelledby="s1" className="animate-rise flex flex-col gap-5 rounded-2xl border border-line bg-surface p-7">
             <div className="flex flex-col gap-1.5">
               <h2 id="s1" className="m-0 text-xl font-semibold">
-                Connect your SocQ account
+                {o.connectTitle}
               </h2>
-              <p className="m-0 text-ink-2">
-                Open Social Listening is free and MIT licensed. It collects public posts through the SocQ API, so you only pay SocQ for the results you fetch. Your key is stored on this server and sent nowhere else.
-              </p>
+              <p className="m-0 text-ink-2">{o.connectIntro}</p>
             </div>
             {configured ? (
               <Notice tone="info">
                 <span className="inline-flex items-center gap-2">
                   <Check aria-hidden="true" className="size-4" strokeWidth={2.4} />
-                  Connected{balance !== null ? <>. Balance: <strong>{formatInt(balance)} credits</strong> (about {creditsToUsd(balance)}).</> : "."}
+                  {balance !== null ? (
+                    <span>
+                      {o.connectedBalance(formatInt(balance), creditsToUsd(balance))}
+                    </span>
+                  ) : (
+                    o.connected
+                  )}
                 </span>
               </Notice>
             ) : (
-              <Field label="SocQ API key">
+              <Field label={o.keyLabel}>
                 <TextInput
                   mono
                   type="password"
@@ -171,22 +183,22 @@ export function OnboardingView() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && key.trim().length >= 8) void connect();
                   }}
-                  placeholder="Paste the key from your SocQ dashboard"
+                  placeholder={o.keyPlaceholder}
                   className="min-h-12"
                 />
               </Field>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <a href={SIGNUP_URL} target="_blank" rel="noopener" className="font-medium">
-                No key yet? Get one from SocQ
+                {o.noKey}
               </a>
               {configured ? (
                 <Button size="lg" variant="primary" onClick={() => setStep(2)} icon={<ArrowRight aria-hidden="true" className="size-4" />}>
-                  Continue
+                  {o.continue}
                 </Button>
               ) : (
                 <Button size="lg" variant="primary" onClick={connect} loading={checking} disabled={key.trim().length < 8 || fromEnv}>
-                  Test connection
+                  {o.testConnection}
                 </Button>
               )}
             </div>
@@ -195,28 +207,26 @@ export function OnboardingView() {
           <section key="s2" aria-labelledby="s2" className="animate-rise flex flex-col gap-[22px] rounded-2xl border border-line bg-surface p-7">
             <div className="flex flex-col gap-1.5">
               <h2 id="s2" className="m-0 text-xl font-semibold">
-                What should we listen for?
+                {o.trackTitle}
               </h2>
-              <p className="m-0 text-ink-2">Every term becomes one search per source on each run, so fewer, sharper terms cost less.</p>
+              <p className="m-0 text-ink-2">{o.trackIntro}</p>
             </div>
-            <Field label="Project name" className="max-w-md">
-              <TextInput value={draft.name} onChange={(e) => update({ name: e.target.value })} placeholder="Usually your brand" maxLength={80} />
+            <Field label={p.name} className="max-w-md">
+              <TextInput value={draft.name} onChange={(e) => update({ name: e.target.value })} placeholder={o.namePlaceholder} maxLength={80} />
             </Field>
-            <TermEditor kind="brand" title="Your brand" hint="Names and handles people use for you. Press Enter after each." values={draft.brandTerms} onChange={(v) => update({ brandTerms: v, name: draft.name || v[0] || "" })} placeholder="e.g. Acme Notes" />
-            <TermEditor kind="competitor" title="Competitors" hint="Tracked separately so you can compare share of voice." values={draft.competitorNames} onChange={(v) => update({ competitorNames: v })} placeholder="Competitor name" max={10} />
-            <BroadTermNotice terms={[...draft.brandTerms, ...draft.competitorNames]} />
-            <TermEditor kind="keyword" title="Topics" hint="Category words where buyers ask for recommendations." values={draft.keywords} onChange={(v) => update({ keywords: v })} placeholder="e.g. markdown notes app" />
-            <TermEditor kind="exclude" title="Ignore posts containing" hint="Filters out look-alike names. Not searched, so free." values={draft.excludeTerms} onChange={(v) => update({ excludeTerms: v })} placeholder="Word to ignore" />
+            <TermEditor kind="brand" title={p.brandTitle} hint={o.brandHint} values={draft.brandTerms} onChange={(v) => update({ brandTerms: v, name: draft.name || v[0] || "" })} placeholder={o.brandPlaceholder} />
+            <TermEditor kind="competitor" title={p.competitorsTitle} hint={o.competitorsHint} values={draft.competitorNames} onChange={(v) => update({ competitorNames: v })} placeholder={p.competitorPlaceholder} max={10} />
+            <BroadTermNotice terms={[...draft.brandTerms, ...draft.competitorNames]} excludeTitle={p.excludeTitle} />
+            <TermEditor kind="keyword" title={p.topicsTitle} hint={p.topicsHint} values={draft.keywords} onChange={(v) => update({ keywords: v })} placeholder={o.topicsPlaceholder} />
+            <TermEditor kind="exclude" title={p.excludeTitle} hint={p.excludeHint} values={draft.excludeTerms} onChange={(v) => update({ excludeTerms: v })} placeholder={p.excludePlaceholder} />
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               <Button size="lg" variant="secondary" onClick={() => setStep(1)}>
-                Back
+                {o.back}
               </Button>
               <div className="flex flex-wrap items-center gap-3.5">
-                <span className="tabular text-ink-3">
-                  {estimate.searches} search{estimate.searches === 1 ? "" : "es"} per source per run
-                </span>
+                <span className="tabular text-ink-3">{p.searchesPerRun(estimate.searches)}</span>
                 <Button size="lg" variant="primary" onClick={() => setStep(3)} disabled={trackedCount === 0} icon={<ArrowRight aria-hidden="true" className="size-4" />}>
-                  Continue
+                  {o.continue}
                 </Button>
               </div>
             </div>
@@ -225,12 +235,12 @@ export function OnboardingView() {
           <section key="s3" aria-labelledby="s3" className="animate-rise flex flex-col gap-[22px] rounded-2xl border border-line bg-surface p-7">
             <div className="flex flex-col gap-1.5">
               <h2 id="s3" className="m-0 text-xl font-semibold">
-                Sources, schedule and budget
+                {o.sourcesTitle}
               </h2>
-              <p className="m-0 text-ink-2">Prices are SocQ list prices per search at the default result count. The estimate updates as you change things.</p>
+              <p className="m-0 text-ink-2">{o.sourcesIntro}</p>
             </div>
             <fieldset className="m-0 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2 border-0 p-0">
-              <legend className="mb-2.5 p-0 font-medium">Sources</legend>
+              <legend className="mb-2.5 p-0 font-medium">{p.sources}</legend>
               {SOURCES.map((src) => {
                 const cfg = draft.sources[src.id];
                 const on = cfg?.enabled ?? false;
@@ -249,10 +259,10 @@ export function OnboardingView() {
                       className="size-[18px] accent-ink"
                     />
                     <span className="flex flex-1 flex-col">
-                      <span className="font-medium">{src.label}</span>
+                      <span className="font-medium">{t.sourceNames[src.id] ?? src.label}</span>
                       <span className="font-mono text-[11px] text-ink-3">{src.endpoint}</span>
                     </span>
-                    <span className="tabular text-[13px] text-ink-2">{searchCost(src, cfg?.resultsLimit ?? src.limits.default)} cr</span>
+                    <span className="tabular text-[13px] text-ink-2">{t.common.credits(String(searchCost(src, cfg?.resultsLimit ?? src.limits.default)))}</span>
                   </label>
                 );
               })}
@@ -260,10 +270,10 @@ export function OnboardingView() {
 
             <div className="flex flex-wrap items-end gap-5">
               <div className="flex flex-col gap-2">
-                <span className="font-medium">How often</span>
-                <Segmented<number> label="Run frequency" value={draft.intervalMinutes} onChange={(v) => update({ intervalMinutes: v })} options={INTERVALS.map((i) => ({ value: i.value, label: i.label }))} />
+                <span className="font-medium">{p.howOften}</span>
+                <Segmented<number> label={p.runFrequency} value={draft.intervalMinutes} onChange={(v) => update({ intervalMinutes: v })} options={INTERVALS.map((i) => ({ value: i.value, label: t.intervals[i.value] ?? i.label }))} />
               </div>
-              <Field label="Monthly budget (credits)">
+              <Field label={p.monthlyBudget}>
                 <TextInput
                   type="number"
                   min={0}
@@ -280,29 +290,26 @@ export function OnboardingView() {
 
             <div aria-live="polite" className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 rounded-[14px] bg-bg px-5 py-[18px]">
               <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] text-ink-3">Per run</span>
-                <span className="font-display tabular text-2xl font-semibold">{formatInt(estimate.perRun)} cr</span>
+                <span className="text-[13px] text-ink-3">{p.perRun}</span>
+                <span className="font-display tabular text-2xl font-semibold">{fmt.credits(estimate.perRun)}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] text-ink-3">Per month</span>
-                <span className="font-display tabular text-2xl font-semibold">{formatInt(estimate.perMonth)} cr</span>
+                <span className="text-[13px] text-ink-3">{p.perMonth}</span>
+                <span className="font-display tabular text-2xl font-semibold">{fmt.credits(estimate.perMonth)}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] text-ink-3">About</span>
-                <span className="font-display tabular text-2xl font-semibold">{creditsToUsd(estimate.perMonth)} / mo</span>
+                <span className="text-[13px] text-ink-3">{p.about}</span>
+                <span className="font-display tabular text-2xl font-semibold">{p.usdPerMonth(creditsToUsd(estimate.perMonth))}</span>
               </div>
-              <p className="col-span-full m-0 text-[13px] text-ink-3">
-                Upper bound: SocQ bills only results that come back, and each run asks for recent posts and skips the ones you already have. Runs pause on their own before the month goes over budget
-                {budget === 0 ? " (0 means no limit)" : ""}.
-              </p>
+              <p className="col-span-full m-0 text-[13px] text-ink-3">{p.upperBound(budget === 0)}</p>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Button size="lg" variant="secondary" onClick={() => setStep(2)}>
-                Back
+                {o.back}
               </Button>
               <Button size="lg" variant="primary" onClick={create} loading={creating} disabled={enabledCount === 0}>
-                Start listening · first run now
+                {o.start}
               </Button>
             </div>
           </section>

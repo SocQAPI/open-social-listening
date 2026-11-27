@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { STATIC_DEMO } from "@/lib/demo/static";
+import { currentMessages } from "@/lib/i18n";
 
 export class ApiError extends Error {
   constructor(
@@ -13,24 +14,12 @@ export class ApiError extends Error {
   }
 }
 
-/** Human copy for the machine codes the API returns. */
-const MESSAGES: Record<string, string> = {
-  no_api_key: "Connect your SocQ API key first.",
-  invalid_api_key: "SocQ did not accept that API key.",
-  api_key_managed_by_env: "The API key is set by SOCQ_API_KEY on the server. Change it there.",
-  socq_unreachable: "Could not reach SocQ. Check the server's network and try again.",
-  demo_project: "The demo project can't fetch live data. Create your own project to start listening.",
-  already_running: "A run is already in progress.",
-  project_not_found: "That project no longer exists.",
-  delivery_failed: "The test alert could not be delivered.",
-  invalid_request: "Some fields need another look.",
-  static_demo: "This is a read-only demo. Install Open Social Listening on your own server to connect SocQ and track your brand.",
-};
-
+/** Human copy for the machine codes the API returns, in the active interface language. */
 export function errorText(error: unknown): string {
-  if (error instanceof ApiError) return MESSAGES[error.code] ?? error.message ?? "Something went wrong.";
+  const m = currentMessages();
+  if (error instanceof ApiError) return m.errors[error.code] ?? error.message ?? m.common.somethingWrong;
   if (error instanceof Error) return error.message;
-  return "Something went wrong.";
+  return m.common.somethingWrong;
 }
 
 export async function api<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {

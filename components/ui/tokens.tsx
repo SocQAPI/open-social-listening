@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/ui/cn";
 
 export type TermKind = "brand" | "competitor" | "keyword";
@@ -8,12 +9,6 @@ const kindStyle: Record<TermKind | "exclude", string> = {
   competitor: "bg-chip-comp-bg text-chip-comp-fg",
   keyword: "bg-chip-kw-bg text-chip-kw-fg",
   exclude: "bg-subtle text-ink-2 line-through",
-};
-
-export const kindLabel: Record<TermKind, string> = {
-  brand: "Brand",
-  competitor: "Competitor",
-  keyword: "Topic",
 };
 
 export function TermChip({ kind, children, className }: { kind: TermKind | "exclude"; children: React.ReactNode; className?: string }) {
@@ -30,42 +25,33 @@ const sentimentColor: Record<Sentiment, string> = {
   negative: "bg-neg",
 };
 
-export const sentimentLabel: Record<Sentiment, string> = {
-  positive: "Positive",
-  neutral: "Neutral",
-  negative: "Negative",
-};
-
 /** Colour never carries sentiment alone: the dot always sits next to its label. */
 export function SentimentTag({ sentiment }: { sentiment: Sentiment | null | undefined }) {
+  const { m } = useI18n();
   if (!sentiment) return null;
   return (
     <span className="inline-flex items-center gap-1.5">
       <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", sentimentColor[sentiment])} />
-      {sentimentLabel[sentiment]}
+      {m.sentiment[sentiment]}
     </span>
   );
 }
 
-/** Platforms are marked with letters, never their logos. */
-export const SOURCE_BADGES: Record<string, { badge: string; label: string }> = {
-  reddit: { badge: "R", label: "Reddit" },
-  x: { badge: "X", label: "X" },
-  youtube: { badge: "YT", label: "YouTube" },
-  tiktok: { badge: "TT", label: "TikTok" },
-  instagram: { badge: "IG", label: "Instagram" },
-  linkedin: { badge: "in", label: "LinkedIn" },
-  threads: { badge: "Th", label: "Threads" },
-  news: { badge: "N", label: "News" },
-  web: { badge: "W", label: "Web" },
+/** Platforms are marked with letters, never their logos. Names come from the messages (`m.sources`). */
+export const SOURCE_BADGES: Record<string, string> = {
+  reddit: "R",
+  x: "X",
+  youtube: "YT",
+  tiktok: "TT",
+  instagram: "IG",
+  linkedin: "in",
+  threads: "Th",
+  news: "N",
+  web: "W",
 };
 
-export function sourceLabel(id: string): string {
-  return SOURCE_BADGES[id]?.label ?? id;
-}
-
 export function SourceBadge({ source, size = "sm", inverted = false }: { source: string; size?: "sm" | "md" | "lg"; inverted?: boolean }) {
-  const meta = SOURCE_BADGES[source] ?? { badge: source.slice(0, 2).toUpperCase(), label: source };
+  const badge = SOURCE_BADGES[source] ?? source.slice(0, 2).toUpperCase();
   return (
     <span
       aria-hidden="true"
@@ -77,7 +63,7 @@ export function SourceBadge({ source, size = "sm", inverted = false }: { source:
         size === "lg" && "size-9 rounded-[9px] text-xs",
       )}
     >
-      {meta.badge}
+      {badge}
     </span>
   );
 }

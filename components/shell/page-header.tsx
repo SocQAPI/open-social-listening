@@ -6,43 +6,45 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
 import { REPO_URL, STATIC_DEMO } from "@/lib/demo/static";
-import { formatInt } from "@/lib/ui/format";
+import { useI18n, type Messages } from "@/lib/i18n";
 import { pausedText, useProject } from "./project-context";
 
-function relative(iso: string | null | undefined, future: boolean): string | null {
+function relative(iso: string | null | undefined, future: boolean, t: Messages["time"]): string | null {
   if (!iso) return null;
   const diff = Math.round((Date.parse(iso) - Date.now()) / 60_000) * (future ? 1 : -1);
   if (!Number.isFinite(diff)) return null;
-  if (diff < 1) return future ? "any minute" : "just now";
-  if (diff < 60) return `${future ? "in " : ""}${diff} min${future ? "" : " ago"}`;
+  if (diff < 1) return future ? t.anyMinute : t.justNow;
+  if (diff < 60) return future ? t.inMinutes(diff) : t.agoMinutes(diff);
   const h = Math.floor(diff / 60);
-  const m = diff % 60;
-  if (h < 48) return `${future ? "in " : ""}${h} h${m ? ` ${m} min` : ""}${future ? "" : " ago"}`;
-  return `${future ? "in " : ""}${Math.round(h / 24)} days${future ? "" : " ago"}`;
+  const min = diff % 60;
+  if (h < 48) return future ? t.inHours(h, min) : t.agoHours(h, min);
+  return future ? t.inDays(Math.round(h / 24)) : t.agoDays(Math.round(h / 24));
 }
 
 export function ProjectStatusLine() {
   const { project, running } = useProject();
+  const { m } = useI18n();
   if (!project) return <span>&nbsp;</span>;
   const parts: string[] = [project.name];
-  if (project.isDemo) parts.push("demo data");
-  else if (running) parts.push("running now…");
-  else if (project.paused) parts.push("paused");
+  if (project.isDemo) parts.push(m.shell.demoData);
+  else if (running) parts.push(m.shell.runningNow);
+  else if (project.paused) parts.push(m.shell.pausedStatus);
   else {
-    const last = relative(project.lastRunAt, false);
-    const next = relative(project.nextRunAt, true);
-    if (last) parts.push(`last run ${last}`);
-    if (next) parts.push(`next run ${next}`);
+    const last = relative(project.lastRunAt, false, m.time);
+    const next = relative(project.nextRunAt, true, m.time);
+    if (last) parts.push(m.shell.lastRun(last));
+    if (next) parts.push(m.shell.nextRun(next));
   }
   return <>{parts.join(" · ")}</>;
 }
 
 export function RunButton() {
   const { project, running, runNow } = useProject();
+  const { m, fmt } = useI18n();
   if (!project || project.isDemo) return null;
   return (
     <Button variant="primary" onClick={runNow} loading={running} icon={<RefreshCw aria-hidden="true" className="size-4" />}>
-      {running ? "Running…" : `Run now · ~${formatInt(project.estimate.perRunCredits)} cr`}
+      {running ? m.shell.running : m.shell.runNow(fmt.int(project.estimate.perRunCredits))}
     </Button>
   );
 }
@@ -64,6 +66,7 @@ export function PageHeader({ title, actions }: { title: string; actions?: ReactN
 /** Demo and paused projects explain themselves right under the header. */
 export function ProjectBanner() {
   const { project, settings } = useProject();
+  const { m } = useI18n();
   if (!project) return null;
   if (project.isDemo && STATIC_DEMO) {
     return (
@@ -71,11 +74,11 @@ export function ProjectBanner() {
         tone="info"
         action={
           <a href={REPO_URL} className="inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 font-semibold text-white no-underline hover:bg-ink-2">
-            Get it on GitHub
+            {m.shell.getOnGithub}
           </a>
         }
       >
-        This is a live demo with sample data for a made-up brand. Run Open Social Listening on your own server to track yours.
+        {m.shell.staticDemoBanner}
       </Notice>
     );
   }
@@ -86,11 +89,13 @@ export function ProjectBanner() {
         tone="info"
         action={
           <Link href="/onboarding?new=1" className="inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 font-semibold text-white no-underline hover:bg-ink-2">
-            {connected ? "Create your project" : "Connect SocQ"}
+            {connected ? m.shell.createProject : m.shell.connectSocq}
           </Link>
         }
       >
-        You are looking at sample data for a made-up brand. {connected ? "Create a project to track your own brand." : "Connect a SocQ API key to track your own brand."}
+        {m.shell.demoBanner}
+        {m.common.sentenceGap}
+        {connected ? m.shell.demoBannerCreate : m.shell.demoBannerConnect}
       </Notice>
     );
   }
@@ -100,7 +105,7 @@ export function ProjectBanner() {
         tone="warn"
         action={
           <Link href={`/p/${project.id}/settings`} className="font-semibold">
-            Open settings
+            {m.shell.openSettings}
           </Link>
         }
       >

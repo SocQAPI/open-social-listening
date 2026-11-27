@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/ui/cn";
+import { useI18n } from "@/lib/i18n";
 import { broadTerms } from "@/lib/terms";
 import { Notice } from "./primitives";
 import type { TermKind } from "./tokens";
@@ -27,6 +28,7 @@ interface TermEditorProps {
 /** Chips with remove buttons plus an input that adds on Enter, comma or the Add button. */
 export function TermEditor({ kind, title, hint, values, onChange, placeholder, max = 20 }: TermEditorProps) {
   const [draft, setDraft] = useState("");
+  const { m } = useI18n();
   const inputId = useId();
   const hintId = useId();
 
@@ -63,7 +65,7 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
             <button
               type="button"
               onClick={() => onChange(values.filter((_, j) => j !== i))}
-              aria-label={`Remove ${v}`}
+              aria-label={m.terms.remove(v)}
               className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100"
             >
               <X aria-hidden="true" className="size-3.5" strokeWidth={2.4} />
@@ -71,7 +73,7 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
           </span>
         ))}
         <label htmlFor={inputId} className="sr-only">
-          {`Add to ${title}`}
+          {m.terms.addTo(title)}
         </label>
         <input
           id={inputId}
@@ -101,17 +103,19 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
 }
 
 /** Shown under the brand and competitor editors when a name is a single everyday-looking word. */
-export function BroadTermNotice({ terms }: { terms: string[] }) {
+export function BroadTermNotice({ terms, excludeTitle }: { terms: string[]; excludeTitle: string }) {
+  const { m } = useI18n();
   const broad = broadTerms(terms);
   if (!broad.length) return null;
-  const quoted = broad.slice(0, 3).map((term) => `“${term}”`).join(", ");
-  const example = broad[0];
+  const quoted = broad.slice(0, 3).map(m.terms.quote).join(", ");
+  const text = broad.length === 1 ? m.terms.broadOne(quoted, broad[0]) : m.terms.broadMany(quoted, broad[0]);
   return (
     <Notice tone="warn">
       <p className="m-0 text-sm">
-        {quoted} {broad.length === 1 ? "is a single word, so it" : "are single words, so they"} will also match posts that are not about you.
-        Add the way people write {broad.length === 1 ? "it" : "them"} in context, such as “{example} app” or your domain, and put unrelated
-        meanings under <span className="font-medium">Ignore posts containing</span>.
+        {text}
+        {m.terms.broadGap}
+        <span className="font-medium">{excludeTitle}</span>
+        {m.terms.broadEnd}
       </p>
     </Notice>
   );

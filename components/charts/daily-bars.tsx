@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/ui/cn";
-import { formatInt } from "@/lib/ui/format";
+import { useI18n } from "@/lib/i18n";
 
 export interface DailyPoint {
   date: string; // YYYY-MM-DD
@@ -20,9 +20,8 @@ function niceMax(v: number): number {
   return 10 * pow;
 }
 
-function shortDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function dayOf(iso: string): Date {
+  return new Date(`${iso}T00:00:00`);
 }
 
 const PLOT_H = 192;
@@ -33,6 +32,9 @@ const PLOT_H = 192;
  */
 export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }) {
   const [hover, setHover] = useState<number | null>(null);
+  const { m, fmt } = useI18n();
+  const shortDate = (iso: string) => fmt.shortDate(dayOf(iso));
+  const formatInt = fmt.int;
   const max = niceMax(Math.max(1, ...data.map((d) => d.count)));
   const peak = Math.max(...data.map((d) => d.count));
   const ticks = [max, max / 2, 0];
@@ -63,7 +65,7 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
                 onFocus={() => setHover(i)}
                 onBlur={() => setHover(null)}
                 tabIndex={0}
-                aria-label={`${shortDate(d.date)}: ${d.count} mentions`}
+                aria-label={m.chart.mentionsOn(shortDate(d.date), d.count)}
               >
                 {d.count === peak && peak > 0 && !active && (
                   // Out of the flow: a label inside the column would make it taller than the plot and push every column down.
@@ -85,7 +87,7 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
                   >
                     <div className="font-semibold">{shortDate(d.date)}</div>
                     <div className="tabular">
-                      {formatInt(d.count)} mentions{d.topSource ? ` · top source ${d.topSource}` : ""}
+                      {m.chart.mentionsCount(formatInt(d.count))}{d.topSource ? m.chart.topSource(d.topSource) : ""}
                     </div>
                   </div>
                 )}
@@ -103,12 +105,12 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
       </div>
       <figcaption className="sr-only">{label}</figcaption>
       <details className="mt-1 text-[13px] text-ink-3">
-        <summary className="cursor-pointer select-none">Show as table</summary>
+        <summary className="cursor-pointer select-none">{m.chart.showAsTable}</summary>
         <table className="tabular mt-2 w-full max-w-sm border-collapse">
           <thead>
             <tr className="text-left text-xs">
-              <th scope="col" className="py-1 font-medium">Day</th>
-              <th scope="col" className="py-1 text-right font-medium">Mentions</th>
+              <th scope="col" className="py-1 font-medium">{m.chart.day}</th>
+              <th scope="col" className="py-1 text-right font-medium">{m.chart.mentions}</th>
             </tr>
           </thead>
           <tbody>
