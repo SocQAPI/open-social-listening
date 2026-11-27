@@ -59,6 +59,8 @@
   --animate-rise: rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-shimmer: shimmer 1.4s linear infinite;
   --animate-spin-slow: osl-spin 0.9s linear infinite;
+  --animate-pop-down: pop-down 170ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  --animate-pop-up: pop-up 170ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -74,6 +76,15 @@
   }
   @keyframes osl-spin {
     to { transform: rotate(360deg); }
+  }
+  /* Menus grow from the edge they are attached to. */
+  @keyframes pop-down {
+    from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pop-up {
+    from { opacity: 0; transform: translateY(6px) scale(0.96); }
+    to { opacity: 1; transform: none; }
   }
 }
 
@@ -110,6 +121,11 @@
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
   border-radius: 6px;
+}
+
+/* Set for a moment when the interface language changes, so the new text fades in instead of jumping. */
+.osl-locale-switch body {
+  animation: fade-in 260ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

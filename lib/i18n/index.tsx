@@ -126,6 +126,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
+    // A short fade (globals.css .osl-locale-switch) so the new language does not snap in.
+    const root = document.documentElement;
+    root.classList.remove("osl-locale-switch");
+    void root.offsetWidth;
+    root.classList.add("osl-locale-switch");
+    window.setTimeout(() => root.classList.remove("osl-locale-switch"), 300);
     setLocaleState(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
