@@ -27,7 +27,7 @@ export function StackedShare({ segments, label }: { segments: ShareSegment[]; la
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="img" aria-label={`${label}: ${description}`} className="flex h-6 gap-0.5">
+      <div role="img" aria-label={`${label}: ${description}`} className="animate-reveal-x flex h-6 gap-0.5">
         {total === 0 ? (
           <div className="h-6 flex-1 rounded bg-track" />
         ) : (
@@ -37,16 +37,20 @@ export function StackedShare({ segments, label }: { segments: ShareSegment[]; la
               onMouseEnter={() => setHover(s.key)}
               onMouseLeave={() => setHover(null)}
               className={cn(
-                "relative h-6 transition-[flex-grow,opacity] duration-500 ease-out",
+                "relative h-6 cursor-default transition-[flex-grow,opacity,filter] duration-300 ease-out",
                 s.color,
                 i === 0 && "rounded-l",
                 i === visible.length - 1 && "rounded-r",
-                hover && hover !== s.key && "opacity-60",
+                hover && hover !== s.key && "opacity-45",
+                hover === s.key && "brightness-95",
               )}
               style={{ flexGrow: s.value, flexBasis: 0 }}
             >
               {hover === s.key && (
-                <div role="tooltip" className="animate-fade-in pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 -translate-y-1.5 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white">
+                <div
+                  role="tooltip"
+                  className="animate-pop-up pointer-events-none absolute bottom-full left-1/2 z-10 origin-bottom -translate-x-1/2 -translate-y-1.5 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white shadow-[0_8px_20px_rgba(23,24,28,0.2)]"
+                >
                   <span className="font-semibold">{s.label}</span> · <span className="tabular">{formatInt(s.value)} ({pct(s.value)}%)</span>
                 </div>
               )}
@@ -55,8 +59,15 @@ export function StackedShare({ segments, label }: { segments: ShareSegment[]; la
         )}
       </div>
       <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-[13px] text-ink-2">
-        {segments.map((s) => (
-          <li key={s.key} className="inline-flex items-center gap-1.5">
+        {segments.map((s, i) => (
+          // Pointing at a legend entry highlights its segment too.
+          <li
+            key={s.key}
+            onMouseEnter={() => s.value > 0 && setHover(s.key)}
+            onMouseLeave={() => setHover(null)}
+            style={{ animationDelay: `${200 + i * 60}ms` }}
+            className={cn("animate-fade-in inline-flex cursor-default items-center gap-1.5 transition-opacity duration-200", hover && hover !== s.key && "opacity-50")}
+          >
             <span aria-hidden="true" className={cn("size-2.5 rounded-[3px]", s.color)} />
             {s.label}
             <strong className="tabular">{formatInt(s.value)}</strong>
@@ -74,17 +85,19 @@ export function HBars({ rows, colorClass = "bg-brand" }: { rows: { key: string; 
   const { fmt } = useI18n();
   const formatInt = fmt.int;
   return (
-    <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-      {rows.map((r) => (
-        <li key={r.key} className="grid grid-cols-[88px_minmax(0,1fr)_44px] items-center gap-2.5">
-          <span className="truncate text-[13px] text-ink-2">{r.label}</span>
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      {rows.map((r, i) => (
+        <li key={r.key} className="group -mx-1.5 grid grid-cols-[88px_minmax(0,1fr)_44px] items-center gap-2.5 rounded-md px-1.5 py-[3px] transition-colors duration-150 hover:bg-subtle">
+          <span className="truncate text-[13px] text-ink-2 transition-colors group-hover:text-ink">{r.label}</span>
           <span className="flex h-5 items-center">
             <span
-              className={cn("h-4 rounded-r transition-[width] duration-500 ease-out", colorClass)}
-              style={{ width: `${Math.max(r.value > 0 ? 2 : 0, Math.round((r.value / max) * 100))}%` }}
+              className={cn("animate-reveal-x h-4 rounded-r transition-[width,filter] duration-500 ease-out group-hover:brightness-90", colorClass)}
+              style={{ width: `${Math.max(r.value > 0 ? 2 : 0, Math.round((r.value / max) * 100))}%`, animationDelay: `${i * 60}ms` }}
             />
           </span>
-          <span className="tabular text-right text-[13px] font-semibold">{formatInt(r.value)}</span>
+          <span className="tabular animate-fade-in text-right text-[13px] font-semibold" style={{ animationDelay: `${300 + i * 60}ms` }}>
+            {formatInt(r.value)}
+          </span>
         </li>
       ))}
     </ul>

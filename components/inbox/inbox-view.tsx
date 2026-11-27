@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, ExternalLink, Search, Star } from "lucide-react";
+import { Download, ExternalLink, Search, SearchX, Star } from "lucide-react";
 import { STATIC_DEMO } from "@/lib/demo/static";
 import type { MentionDTO } from "@/lib/dto";
 import { getSource } from "@/lib/sources";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/ui/cn";
 import { useI18n, type Messages } from "@/lib/i18n";
 import { splitHighlight } from "@/lib/ui/format";
 import { Button } from "@/components/ui/button";
-import { Card, EmptyState, Select, Skeleton } from "@/components/ui/primitives";
+import { Card, Dropdown, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
 import { SentimentTag, SourceBadge, TermChip, type TermKind } from "@/components/ui/tokens";
 import { useToast } from "@/components/ui/toast";
@@ -105,6 +105,11 @@ export function InboxView() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const seen = useRef<Set<number> | null>(null);
   const ticket = useRef(0);
+  /** Bumped when a different filter's results arrive; the list is re-keyed so its rows cascade in again. */
+  const [listVersion, setListVersion] = useState(0);
+  const lastFilters = useRef<string | null>(null);
+  /** Rows cascade in only while a list is first shown; after that only rows a run adds animate. */
+  const [cascadeVersion, setCascadeVersion] = useState(0);
 
   const stats = useApi<StatsForCounts>(`/api/stats?projectId=${projectId}&days=${period}`);
 
@@ -128,6 +133,12 @@ export function InboxView() {
       try {
         const res = await api<{ items: MentionDTO[]; nextCursor: string | null }>(`/api/mentions?${p}`);
         if (mine !== ticket.current) return;
+        const filters = filterParams.toString();
+        if (!append && lastFilters.current !== filters) {
+          if (seen.current) seen.current = new Set([...seen.current, ...res.items.map((m) => m.id)]);
+          setListVersion((v) => v + 1);
+        }
+        if (!append) lastFilters.current = filters;
         setItems((prev) => (append && prev ? [...prev, ...res.items] : res.items));
         setCursor(res.nextCursor);
       } catch (error) {
@@ -163,6 +174,14 @@ export function InboxView() {
     for (const m of items) seen.current.add(m.id);
     return result;
   }, [items]);
+
+  // Once the cascade has played (14 rows × 28ms plus the 240ms rise), stop it, so starring or reading a row
+  // later does not replay it.
+  useEffect(() => {
+    if (cascadeVersion === listVersion) return;
+    const timer = window.setTimeout(() => setCascadeVersion(listVersion), 14 * 28 + 300);
+    return () => window.clearTimeout(timer);
+  }, [listVersion, cascadeVersion]);
 
   const selected = items?.find((m) => m.id === selectedId) ?? items?.[0] ?? null;
 
@@ -236,9 +255,9 @@ export function InboxView() {
                     }
                   : undefined
               }
-              className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-4 font-medium text-ink no-underline transition-colors hover:bg-subtle"
+              className="group inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-4 font-medium text-ink no-underline transition-[background-color,transform] duration-150 hover:bg-subtle active:scale-[0.98]"
             >
-              <Download aria-hidden="true" className="size-4" />
+              <Download aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:translate-y-0.5" />
               {t.inbox.exportCsv}
             </a>
             <RunButton />
@@ -260,37 +279,41 @@ export function InboxView() {
               { value: "keyword", label: t.inbox.topics, count: kindCount("keyword") },
             ]}
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative flex items-center">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <label className="group relative flex w-full items-center sm:w-auto">
               <span className="sr-only">{t.inbox.searchLabel}</span>
-              <Search aria-hidden="true" className="pointer-events-none absolute left-3 size-4 text-ink-3" />
+              <Search aria-hidden="true" className="pointer-events-none absolute left-3 size-4 text-ink-3 transition-colors group-focus-within:text-ink" />
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t.inbox.searchPlaceholder}
-                className="min-h-10 w-60 rounded-[10px] border border-line-strong bg-surface pr-3 pl-9 text-sm text-ink placeholder:text-ink-4 focus:border-ink focus:outline-none"
+                className="min-h-10 w-full rounded-[10px] border border-line-strong bg-surface pr-3 pl-9 text-sm text-ink transition-[border-color,box-shadow,width] duration-200 ease-out placeholder:text-ink-4 hover:border-input focus:border-ink focus:shadow-[0_0_0_3px_var(--color-accent-tint)] focus:outline-none sm:w-56 sm:focus:w-72"
               />
             </label>
-            <label className="flex items-center gap-1.5 text-[13px] text-ink-3">
-              {t.inbox.sentiment}
-              <Select value={sentiment} onChange={(e) => setSentiment(e.target.value as SentimentFilter)}>
-                <option value="any">{t.inbox.any}</option>
-                <option value="positive">{t.sentiment.positive}</option>
-                <option value="neutral">{t.sentiment.neutral}</option>
-                <option value="negative">{t.sentiment.negative}</option>
-              </Select>
-            </label>
-            <label className="flex items-center gap-1.5 text-[13px] text-ink-3">
-              {t.inbox.period}
-              <Select value={period} onChange={(e) => setPeriod(Number(e.target.value))}>
-                {PERIODS.map((days) => (
-                  <option key={days} value={days}>
-                    {t.inbox.periods[days]}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            <Dropdown<SentimentFilter>
+              label={t.inbox.sentiment}
+              showLabel
+              value={sentiment}
+              onChange={setSentiment}
+              align="end"
+              className="flex-1 sm:flex-none"
+              options={[
+                { value: "any", label: t.inbox.any },
+                { value: "positive", label: t.sentiment.positive, dot: "bg-pos" },
+                { value: "neutral", label: t.sentiment.neutral, dot: "bg-neu" },
+                { value: "negative", label: t.sentiment.negative, dot: "bg-neg" },
+              ]}
+            />
+            <Dropdown<number>
+              label={t.inbox.period}
+              showLabel
+              value={period}
+              onChange={setPeriod}
+              align="end"
+              className="flex-1 sm:flex-none"
+              options={PERIODS.map((days) => ({ value: days, label: t.inbox.periods[days] }))}
+            />
           </div>
         </div>
         <div role="group" aria-label={t.inbox.source} className="flex flex-wrap gap-1.5">
@@ -304,9 +327,9 @@ export function InboxView() {
                 aria-pressed={active}
                 onClick={() => setSource(id)}
                 className={cn(
-                  "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-[9px] border text-sm font-medium transition-colors duration-150",
+                  "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-[9px] border text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.96]",
                   id === "all" ? "px-3" : "pr-3 pl-2",
-                  active ? "border-ink bg-ink text-white" : "border-line-strong bg-surface text-ink hover:bg-subtle",
+                  active ? "border-ink bg-ink text-white shadow-[0_2px_8px_rgba(23,24,28,0.18)]" : "border-line-strong bg-surface text-ink hover:border-input hover:bg-subtle",
                 )}
               >
                 {id !== "all" && <SourceBadge source={id} inverted={active} />}
@@ -325,11 +348,11 @@ export function InboxView() {
             aria-pressed={onlyStarred}
             onClick={() => setOnlyStarred((v) => !v)}
             className={cn(
-              "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border px-3 text-sm font-medium transition-colors duration-150",
-              onlyStarred ? "border-ink bg-ink text-white" : "border-line-strong bg-surface text-ink hover:bg-subtle",
+              "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border px-3 text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.96]",
+              onlyStarred ? "border-ink bg-ink text-white shadow-[0_2px_8px_rgba(23,24,28,0.18)]" : "border-line-strong bg-surface text-ink hover:border-input hover:bg-subtle",
             )}
           >
-            <Star aria-hidden="true" className={cn("size-4", onlyStarred ? "fill-accent text-accent" : "")} />
+            <Star aria-hidden="true" className={cn("size-4", onlyStarred && "animate-pop-in fill-accent text-accent")} />
             {t.inbox.starredFilter}
           </button>
         </div>
@@ -339,7 +362,12 @@ export function InboxView() {
         <Card aria-label={t.inbox.mentionsList} className="min-w-0 flex-[999_1_520px] overflow-hidden">
           <div className="flex items-center justify-between border-b border-track px-4 py-3 text-[13px] text-ink-3">
             <span className="tabular">{t.inbox.listSummary(items ? formatInt(items.length) : "…", Boolean(cursor), formatInt(shownUnread))}</span>
-            <button type="button" onClick={markAllRead} className="min-h-8 cursor-pointer rounded-md px-2 text-[13px] font-medium text-link hover:bg-subtle">
+            <button
+              type="button"
+              onClick={markAllRead}
+              disabled={shownUnread === 0}
+              className="min-h-8 cursor-pointer rounded-md px-2 text-[13px] font-medium text-link transition-[background-color,opacity] hover:bg-subtle disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent"
+            >
               {t.inbox.markAllRead}
             </button>
           </div>
@@ -355,24 +383,34 @@ export function InboxView() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <EmptyState title={t.inbox.emptyTitle}>
+            <EmptyState title={t.inbox.emptyTitle} icon={project && !project.lastRunAt && !project.isDemo ? undefined : <SearchX className="size-[22px]" strokeWidth={1.8} />}>
               {project && !project.lastRunAt && !project.isDemo ? t.inbox.emptyFirstRun : t.inbox.emptyFilters}
             </EmptyState>
           ) : (
-            <ul className="m-0 list-none p-0">
-              {items.map((m) => {
+            <ul key={listVersion} className="m-0 list-none p-0">
+              {items.map((m, i) => {
                 const isSel = selected?.id === m.id;
                 const metrics = metricList(m).slice(0, 2);
                 const where = authorWhere(m);
+                // The first rows cascade in when a list is shown; rows a run adds later rise on their own.
+                const cascade = cascadeVersion !== listVersion && i < 14;
                 return (
                   <li
                     key={m.id}
+                    style={cascade ? { animationDelay: `${i * 28}ms` } : undefined}
                     className={cn(
-                      "flex items-start border-b border-track transition-colors duration-150",
+                      "relative flex items-start border-b border-track transition-colors duration-150",
                       isSel ? "bg-select" : "bg-surface hover:bg-[#fafaf8]",
-                      fresh.has(m.id) && "animate-rise",
+                      (cascade || fresh.has(m.id)) && "animate-rise",
                     )}
                   >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "absolute inset-y-0 left-0 w-[3px] rounded-r bg-brand transition-transform duration-300 ease-out",
+                        isSel ? "scale-y-100" : "scale-y-0",
+                      )}
+                    />
                     <button
                       type="button"
                       onClick={() => select(m)}
@@ -380,7 +418,7 @@ export function InboxView() {
                       className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 py-3.5 pr-1 pl-4 text-left"
                     >
                       <span className="flex min-w-0 items-center gap-2">
-                        <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full transition-colors", m.read ? "bg-transparent" : "bg-accent")} />
+                        <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full transition-[background-color,transform] duration-300", m.read ? "scale-50 bg-transparent" : "bg-accent")} />
                         {!m.read && <span className="sr-only">{t.inbox.unread}</span>}
                         <SourceBadge source={m.source} size="md" />
                         <span className="truncate font-semibold">{authorName(m, t.sources)}</span>
@@ -406,9 +444,12 @@ export function InboxView() {
                       onClick={() => patch(m, { starred: !m.starred })}
                       aria-label={m.starred ? t.inbox.removeStar : t.inbox.starMention}
                       aria-pressed={m.starred}
-                      className="mt-2 mr-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-ink-4 transition-colors hover:bg-subtle hover:text-ink"
+                      className="group mt-2 mr-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-ink-4 transition-[background-color,color,transform] hover:bg-subtle hover:text-ink active:scale-90"
                     >
-                      <Star aria-hidden="true" className={cn("size-[18px] transition-transform duration-200", m.starred && "scale-110 fill-accent text-accent")} />
+                      <Star
+                        aria-hidden="true"
+                        className={cn("size-[18px] transition-transform duration-200", m.starred ? "animate-pop-in fill-accent text-accent" : "group-hover:-rotate-12")}
+                      />
                     </button>
                   </li>
                 );
@@ -436,7 +477,7 @@ export function InboxView() {
             type="button"
             aria-label={t.inbox.closeMention}
             onClick={() => setSheetOpen(false)}
-            className="animate-fade-in fixed inset-0 z-30 cursor-default bg-ink/30 xl:hidden"
+            className="animate-fade-in fixed inset-0 z-30 cursor-default bg-ink/30 backdrop-blur-[2px] xl:hidden"
           />
         )}
         <Card
@@ -446,12 +487,13 @@ export function InboxView() {
             "min-w-0 flex-col gap-[18px] p-5",
             "xl:sticky xl:top-5 xl:flex xl:flex-[1_1_340px]",
             sheetOpen
-              ? "animate-rise fixed inset-x-0 bottom-0 z-40 flex max-h-[82vh] overflow-y-auto rounded-t-2xl rounded-b-none shadow-[0_-8px_32px_rgba(23,24,28,0.18)] xl:static xl:z-auto xl:max-h-none xl:overflow-visible xl:rounded-[14px] xl:shadow-none"
+              ? "max-xl:animate-sheet-up fixed inset-x-0 bottom-0 z-40 flex max-h-[82vh] overflow-y-auto rounded-t-2xl rounded-b-none shadow-[0_-8px_32px_rgba(23,24,28,0.18)] xl:static xl:z-auto xl:max-h-none xl:overflow-visible xl:rounded-[14px] xl:shadow-[0_1px_2px_rgba(23,24,28,0.04)]"
               : "hidden",
           )}
         >
           {sheetOpen && (
-            <div className="-mt-1 flex justify-end xl:hidden">
+            <div className="relative -mt-1 flex justify-end xl:hidden">
+              <span aria-hidden="true" className="absolute top-0 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-line-strong" />
               <Button size="sm" variant="ghost" onClick={() => setSheetOpen(false)}>
                 {t.inbox.close}
               </Button>
@@ -470,7 +512,7 @@ function Detail({ m, onStar, onUnread }: { m: MentionDTO; onStar: () => void; on
   const metrics = metricList(m);
   const where = authorWhere(m);
   return (
-    <div className="animate-fade-in flex flex-col gap-[18px]">
+    <div className="animate-slide-in-right flex flex-col gap-[18px]">
       <div className="flex items-center gap-2.5">
         {m.author.avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -492,7 +534,7 @@ function Detail({ m, onStar, onUnread }: { m: MentionDTO; onStar: () => void; on
       {metrics.length > 0 && (
         <dl className="m-0 grid grid-cols-3 gap-2">
           {metrics.slice(0, 3).map((x) => (
-            <div key={x.name} className="rounded-[10px] bg-bg px-3 py-2.5">
+            <div key={x.name} className="rounded-[10px] border border-track bg-bg px-3 py-2.5 transition-colors hover:border-line-strong">
               <dt className="text-xs text-ink-3">{t.inbox.metricTitles[x.name]}</dt>
               <dd className="font-display tabular m-0 mt-0.5 text-lg font-semibold">{fmt.compact(x.value)}</dd>
             </div>
@@ -518,11 +560,16 @@ function Detail({ m, onStar, onUnread }: { m: MentionDTO; onStar: () => void; on
         )}
       </dl>
       <div className="flex flex-wrap gap-2">
-        <a href={m.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-ink px-4 font-semibold text-white no-underline transition-colors hover:bg-ink-2">
+        <a
+          href={m.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-ink px-4 font-semibold text-white no-underline shadow-[0_1px_2px_rgba(23,24,28,0.2)] transition-[background-color,box-shadow,transform] duration-150 hover:bg-ink-2 hover:shadow-[0_4px_12px_rgba(23,24,28,0.18)] active:scale-[0.98]"
+        >
           {t.inbox.openOriginal}
-          <ExternalLink aria-hidden="true" className="size-4" />
+          <ExternalLink aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </a>
-        <Button variant="secondary" onClick={onStar} icon={<Star aria-hidden="true" className={cn("size-4", m.starred && "fill-accent text-accent")} />}>
+        <Button variant="secondary" onClick={onStar} icon={<Star aria-hidden="true" className={cn("size-4", m.starred && "animate-pop-in fill-accent text-accent")} />}>
           {m.starred ? t.inbox.starred : t.inbox.star}
         </Button>
         <Button variant="secondary" onClick={onUnread} disabled={!m.read}>

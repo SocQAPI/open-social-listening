@@ -283,6 +283,8 @@ export const zhCN: Messages = {
     pause: "暂停",
     saveChanges: "保存修改",
     savedState: "已保存",
+    unsavedChanges: "有尚未保存的修改",
+    discard: "放弃修改",
     tracking: "监测内容",
     brandHint: "大家称呼你的名称和账号。",
     brandPlaceholder: "例如 @yourbrand",

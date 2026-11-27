@@ -291,6 +291,8 @@ export const de: Messages = {
     pause: "Pausieren",
     saveChanges: "Änderungen speichern",
     savedState: "Gespeichert",
+    unsavedChanges: "Ungespeicherte Änderungen",
+    discard: "Verwerfen",
     tracking: "Was wir beobachten",
     brandHint: "Namen und Handles, unter denen man Sie kennt.",
     brandPlaceholder: "z. B. @ihremarke",

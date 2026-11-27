@@ -60,15 +60,15 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
       )}
       <div className="flex flex-wrap items-center gap-2">
         {values.map((v, i) => (
-          <span key={`${v}-${i}`} className={cn("animate-fade-in inline-flex min-h-9 items-center gap-0.5 rounded-[9px] pl-3 pr-1 text-sm font-medium", chipStyle[kind])}>
+          <span key={v} className={cn("animate-pop-in inline-flex min-h-9 items-center gap-0.5 rounded-[9px] pl-3 pr-1 text-sm font-medium", chipStyle[kind])}>
             <span className={kind === "exclude" ? "line-through" : undefined}>{v}</span>
             <button
               type="button"
               onClick={() => onChange(values.filter((_, j) => j !== i))}
               aria-label={m.terms.remove(v)}
-              className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100"
+              className="group inline-flex size-7 cursor-pointer items-center justify-center rounded-md opacity-60 transition-[opacity,background-color] hover:bg-black/5 hover:opacity-100"
             >
-              <X aria-hidden="true" className="size-3.5" strokeWidth={2.4} />
+              <X aria-hidden="true" className="size-3.5 transition-transform duration-200 group-hover:rotate-90" strokeWidth={2.4} />
             </button>
           </span>
         ))}
@@ -95,7 +95,7 @@ export function TermEditor({ kind, title, hint, values, onChange, placeholder, m
           }}
           onBlur={() => add()}
           placeholder={placeholder}
-          className="min-h-9 w-48 rounded-[9px] border border-dashed border-[#bdbcb5] bg-surface px-3 text-sm text-ink placeholder:text-ink-4 focus:border-solid focus:border-ink focus:outline-none"
+          className="min-h-9 w-48 rounded-[9px] border border-dashed border-[#bdbcb5] bg-surface px-3 text-sm text-ink transition-[border-color,box-shadow,width] duration-200 placeholder:text-ink-4 hover:border-ink-4 focus:w-56 focus:border-solid focus:border-ink focus:shadow-[0_0_0_3px_var(--color-accent-tint)] focus:outline-none"
         />
       </div>
     </fieldset>

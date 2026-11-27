@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { BarChart3, Check, ChevronDown, Globe, Inbox, Plus, SlidersHorizontal } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { ArrowUpRight, BarChart3, Globe, Inbox, Plus, SlidersHorizontal } from "lucide-react";
 import { LOCALES, useI18n, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/ui/cn";
-import { Meter, Skeleton } from "@/components/ui/primitives";
+import { CountUp, Dropdown, Meter, Skeleton } from "@/components/ui/primitives";
 import { Logo } from "./logo";
 
 export interface SidebarProject {
@@ -30,143 +30,110 @@ export interface SidebarProps {
 const REPO_URL = "https://github.com/SocQAPI/open-social-listening";
 const SOCQ_URL = "https://socq.ai/?utm_source=open-social-listening&utm_medium=app&utm_campaign=sidebar";
 
-/**
- * Interface language picker: a button and a listbox menu (the native select can't be styled). The menu opens
- * upward at the bottom of the sidebar and downward elsewhere. Keyboard: arrows, Home/End, Enter/Space, Escape.
- */
+/** Interface language picker; the choice is remembered in this browser. */
 export function LanguageSelect({
   className,
-  placement = "down",
+  placement = "auto",
   align = "end",
 }: {
   className?: string;
-  placement?: "up" | "down";
+  placement?: "auto" | "up" | "down";
   align?: "start" | "end";
 }) {
   const { locale, setLocale, m } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  const listId = useId();
-  const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
+  return (
+    <Dropdown<Locale>
+      label={m.common.language}
+      value={locale}
+      onChange={setLocale}
+      options={LOCALES.map((l) => ({ value: l.code, label: l.label, lang: l.code }))}
+      placement={placement}
+      align={align}
+      size="sm"
+      className={className}
+      buttonClassName="w-auto border-line text-ink-2 hover:text-ink"
+      menuClassName="min-w-48"
+      icon={<Globe aria-hidden="true" className="size-3.5 text-ink-3 transition-transform duration-500 ease-out group-hover:rotate-[24deg]" />}
+    />
+  );
+}
 
-  useEffect(() => {
-    if (!open) return;
-    listRef.current?.focus();
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+/**
+ * Primary navigation. The white "you are here" pill is a single element that slides to the active link, in a
+ * row on phones and a column on desktop.
+ */
+function NavLinks({ items, pathname }: { items: { href: string; label: string; icon: typeof Inbox; badge: number | null }[]; pathname: string }) {
+  const { fmt } = useI18n();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [animate, setAnimate] = useState(false);
+  const index = items.findIndex((item) => item.href === pathname);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const place = () => {
+      const link = list.querySelectorAll<HTMLAnchorElement>("a")[index];
+      setPill(link ? { x: link.offsetLeft, y: link.offsetTop, w: link.offsetWidth, h: link.offsetHeight } : null);
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
-  const openMenu = () => {
-    setActive(Math.max(0, LOCALES.findIndex((l) => l.code === locale)));
-    setOpen(true);
-  };
-  const close = (refocus: boolean) => {
-    setOpen(false);
-    if (refocus) buttonRef.current?.focus();
-  };
-  const choose = (code: Locale) => {
-    setLocale(code);
-    close(true);
-  };
-
-  const onButtonKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      openMenu();
-    }
-  };
-  const onListKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
-    const last = LOCALES.length - 1;
-    const keys: Record<string, () => void> = {
-      ArrowDown: () => setActive((i) => (i >= last ? 0 : i + 1)),
-      ArrowUp: () => setActive((i) => (i <= 0 ? last : i - 1)),
-      Home: () => setActive(0),
-      End: () => setActive(last),
-      Enter: () => choose(LOCALES[active].code),
-      " ": () => choose(LOCALES[active].code),
-      Escape: () => close(true),
+    place();
+    // The links change size with the language and when the unread badge appears.
+    const observer = new ResizeObserver(place);
+    observer.observe(list);
+    list.querySelectorAll("a").forEach((a) => observer.observe(a));
+    const id = requestAnimationFrame(() => setAnimate(true));
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(id);
     };
-    if (e.key === "Tab") return close(false);
-    const action = keys[e.key];
-    if (!action) return;
-    e.preventDefault();
-    action();
-  };
+  }, [index]);
 
   return (
-    <div ref={rootRef} className={cn("relative inline-flex", className)}>
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? listId : undefined}
-        aria-label={`${m.common.language}: ${current.label}`}
-        onClick={() => (open ? close(false) : openMenu())}
-        onKeyDown={onButtonKeyDown}
-        className={cn(
-          "group inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-lg border bg-surface px-2.5 text-xs font-medium",
-          "transition-[border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97]",
-          "focus-visible:ring-2 focus-visible:ring-ink/15 focus-visible:outline-none",
-          open ? "border-ink text-ink shadow-[0_0_0_3px_rgba(23,24,28,0.06)]" : "border-line text-ink-2 hover:border-line-strong hover:text-ink",
-        )}
-      >
-        <Globe aria-hidden="true" className="size-3.5 text-ink-3 transition-transform duration-500 ease-out group-hover:rotate-[24deg]" />
-        <span lang={current.code}>{current.label}</span>
-        <ChevronDown aria-hidden="true" className={cn("size-3.5 text-ink-4 transition-transform duration-200 ease-out", open && "rotate-180")} />
-      </button>
-      {open && (
-        <ul
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          tabIndex={-1}
-          aria-label={m.common.language}
-          aria-activedescendant={`${listId}-${active}`}
-          onKeyDown={onListKeyDown}
+    <div ref={listRef} className="relative flex flex-row gap-1 md:flex-col md:gap-0.5">
+      {pill && (
+        <span
+          aria-hidden="true"
           className={cn(
-            "absolute z-50 m-0 min-w-48 list-none rounded-xl border border-line bg-surface p-1 focus:outline-none",
-            "shadow-[0_16px_40px_rgba(23,24,28,0.14),0_2px_6px_rgba(23,24,28,0.06)]",
-            placement === "up" ? "bottom-full mb-2 animate-pop-up" : "top-full mt-2 animate-pop-down",
-            placement === "up" ? (align === "end" ? "origin-bottom-right" : "origin-bottom-left") : align === "end" ? "origin-top-right" : "origin-top-left",
-            align === "end" ? "right-0" : "left-0",
+            "absolute top-0 left-0 rounded-lg bg-surface shadow-[0_0_0_1px_var(--color-line),0_1px_2px_rgba(23,24,28,0.06)]",
+            animate && "transition-[transform,width,height] duration-300 ease-[cubic-bezier(0.3,1.1,0.5,1)]",
           )}
-        >
-          {LOCALES.map((l, i) => {
-            const selected = l.code === locale;
-            return (
-              <li
-                key={l.code}
-                id={`${listId}-${i}`}
-                role="option"
-                aria-selected={selected}
-                lang={l.code}
-                onPointerEnter={() => setActive(i)}
-                onClick={() => choose(l.code)}
-                style={{ animationDelay: `${40 + i * 25}ms` }}
-                className={cn(
-                  "animate-fade-in flex min-h-9 cursor-pointer items-center gap-3 rounded-lg px-3 text-sm transition-colors duration-100",
-                  i === active ? "bg-subtle text-ink" : "text-ink-2",
-                  selected && "font-semibold text-ink",
-                )}
-              >
-                <span className="flex-1">{l.label}</span>
-                <Check
-                  aria-hidden="true"
-                  strokeWidth={2.4}
-                  className={cn("size-4 text-accent transition-[opacity,transform] duration-200 ease-out", selected ? "scale-100 opacity-100" : "scale-50 opacity-0")}
-                />
-              </li>
-            );
-          })}
-        </ul>
+          style={{ width: pill.w, height: pill.h, transform: `translate(${pill.x}px, ${pill.y}px)` }}
+        />
       )}
+      {items.map((item) => {
+        const active = item.href === pathname;
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "group relative flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-2 no-underline transition-[background-color,color] duration-150 md:flex-none md:justify-start md:gap-2.5 md:px-3",
+              active ? "font-semibold text-ink" : "font-medium text-ink-2 hover:bg-subtle hover:text-ink",
+              // Until the pill is measured, the active link carries its own background.
+              active && !pill && "bg-surface shadow-[0_0_0_1px_var(--color-line)]",
+            )}
+          >
+            {/* Text only on phones: three translated labels plus icons do not fit 390px (German). */}
+            <Icon
+              aria-hidden="true"
+              strokeWidth={2}
+              className={cn(
+                "size-[18px] transition-[color,transform] duration-200 ease-out group-hover:scale-110 max-sm:hidden",
+                active ? "text-accent" : "text-ink-3 group-hover:text-ink",
+              )}
+            />
+            <span className="md:flex-1">{item.label}</span>
+            {item.badge ? (
+              // Keyed by the count, so the badge pops whenever it changes.
+              <span key={item.badge} className="animate-pop-in tabular rounded-full bg-ink px-2 text-xs leading-5 font-semibold text-white">
+                {fmt.int(item.badge)}
+              </span>
+            ) : null}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -182,6 +149,7 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
     { href: `${base}/dashboard`, label: m.shell.dashboard, icon: BarChart3, badge: null },
     { href: `${base}/settings`, label: m.shell.settings, icon: SlidersHorizontal, badge: null },
   ];
+  const projectDot = (p: SidebarProject) => (p.paused ? "bg-neu" : "bg-brand");
 
   return (
     <nav
@@ -196,46 +164,22 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
         <LanguageSelect className="md:hidden" placement="down" align="end" />
       </div>
 
-      <label className="relative">
-        <span className="sr-only">{m.shell.project}</span>
-        <select
+      {projects === null ? (
+        <Skeleton className="h-11 w-full rounded-[10px]" />
+      ) : (
+        <Dropdown<number>
+          label={m.shell.project}
           value={projectId}
-          onChange={(e) => router.push(`/p/${e.target.value}/inbox`)}
-          className="min-h-11 w-full cursor-pointer appearance-none truncate rounded-[10px] border border-line bg-surface pr-9 pl-3 font-semibold text-ink focus:border-ink focus:outline-none"
-        >
-          {(projects ?? []).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </label>
+          onChange={(id) => router.push(`/p/${id}/inbox`)}
+          options={projects.map((p) => ({ value: p.id, label: p.name, dot: projectDot(p), note: p.paused ? m.shell.paused : undefined }))}
+          placement="down"
+          size="lg"
+          className="w-full"
+          buttonClassName="border-line text-sm shadow-[0_1px_2px_rgba(23,24,28,0.04)]"
+        />
+      )}
 
-      <div className="flex flex-row gap-1 md:flex-col md:gap-0.5">
-        {nav.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-2 no-underline transition-colors duration-150 md:flex-none md:justify-start md:gap-2.5 md:px-3",
-                active ? "bg-surface font-semibold text-ink shadow-[0_0_0_1px_var(--color-line)]" : "font-medium text-ink-2 hover:bg-subtle hover:text-ink",
-              )}
-            >
-              {/* Text only on phones: three translated labels plus icons do not fit 390px (German). */}
-              <Icon aria-hidden="true" className={cn("size-[18px] max-sm:hidden", active && "text-accent")} strokeWidth={2} />
-              <span className="md:flex-1">{item.label}</span>
-              {item.badge ? <span className="tabular rounded-full bg-ink px-2 text-xs font-semibold text-white">{formatInt(item.badge)}</span> : null}
-            </Link>
-          );
-        })}
-      </div>
+      <NavLinks items={nav} pathname={pathname} />
 
       <div className="hidden flex-col gap-1.5 md:flex">
         <span className="px-3 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">{m.shell.projects}</span>
@@ -245,20 +189,34 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
             <Skeleton className="h-4 w-20" />
           </div>
         ) : (
-          projects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/p/${p.id}/inbox`}
-              className={cn("flex min-h-9 items-center gap-2.5 rounded-lg px-3 font-medium no-underline hover:bg-subtle", p.id === projectId ? "text-ink" : "text-ink-2")}
-            >
-              <span aria-hidden="true" className={cn("size-2 rounded-full", p.paused ? "bg-neu" : "bg-brand")} />
-              <span className="flex-1 truncate">{p.name}</span>
-              {p.paused && <span className="text-xs text-ink-4">{m.shell.paused}</span>}
-            </Link>
-          ))
+          projects.map((p) => {
+            const current = p.id === projectId;
+            return (
+              <Link
+                key={p.id}
+                href={`/p/${p.id}/inbox`}
+                aria-current={current ? "true" : undefined}
+                className={cn(
+                  "group flex min-h-9 items-center gap-2.5 rounded-lg px-3 no-underline transition-colors duration-150 hover:bg-subtle",
+                  current ? "font-semibold text-ink" : "font-medium text-ink-2 hover:text-ink",
+                )}
+              >
+                {/* The open project's dot breathes, like a live signal. */}
+                <span aria-hidden="true" className="relative flex size-2">
+                  {current && !p.paused && <span className="animate-ping-soft absolute inset-0 rounded-full bg-brand" />}
+                  <span className={cn("relative size-2 rounded-full transition-transform duration-200 group-hover:scale-125", projectDot(p))} />
+                </span>
+                <span className="flex-1 truncate">{p.name}</span>
+                {p.paused && <span className="text-xs font-normal text-ink-4">{m.shell.paused}</span>}
+              </Link>
+            );
+          })
         )}
-        <Link href="/onboarding?new=1" className="flex min-h-9 items-center gap-2.5 rounded-lg px-3 font-medium text-ink-3 no-underline hover:bg-subtle hover:text-ink">
-          <Plus aria-hidden="true" className="size-4" />
+        <Link
+          href="/onboarding?new=1"
+          className="group flex min-h-9 items-center gap-2.5 rounded-lg px-3 font-medium text-ink-3 no-underline transition-colors duration-150 hover:bg-subtle hover:text-ink"
+        >
+          <Plus aria-hidden="true" className="size-4 transition-transform duration-300 ease-out group-hover:rotate-90" />
           {m.shell.newProject}
         </Link>
       </div>
@@ -268,38 +226,53 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
       {connected === false ? (
         <div className="hidden flex-col gap-2 rounded-xl border border-line bg-surface p-3.5 md:flex">
           <span className="text-[13px] text-ink-2">{m.shell.connectPrompt}</span>
-          <Link href="/onboarding" className="inline-flex min-h-10 items-center justify-center rounded-[10px] bg-accent-strong px-3 font-semibold text-white no-underline transition-colors hover:bg-accent-hover">
+          <Link
+            href="/onboarding"
+            className="inline-flex min-h-10 items-center justify-center rounded-[10px] bg-accent-strong px-3 font-semibold text-white no-underline transition-[background-color,box-shadow] hover:bg-accent-hover hover:shadow-[0_4px_12px_rgba(212,57,31,0.28)]"
+          >
             {m.shell.connectSocq}
           </Link>
         </div>
       ) : (
-      <div className="hidden flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5 md:flex">
-        <div className="flex items-baseline justify-between">
-          <span className="text-xs font-medium text-ink-3">{m.shell.balance}</span>
-          {balance === null ? <Skeleton className="h-5 w-16" /> : <span className="font-display tabular text-base font-semibold">{fmt.credits(balance)}</span>}
-        </div>
-        {monthBudget !== null && monthUsed !== null && (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between text-xs text-ink-3">
-              <span>{m.shell.thisMonth}</span>
-              <span className="tabular">
-                {formatInt(monthUsed)} / {formatInt(monthBudget)}
+        <div className="hidden flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5 shadow-[0_1px_2px_rgba(23,24,28,0.04)] md:flex">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs font-medium text-ink-3">{m.shell.balance}</span>
+            {balance === null ? (
+              <Skeleton className="h-5 w-16" />
+            ) : (
+              <span className="font-display tabular text-base font-semibold">
+                <CountUp value={balance} format={(n) => fmt.credits(n)} />
               </span>
-            </div>
-            <Meter value={monthUsed} max={monthBudget} label={m.shell.budgetUsed} />
+            )}
           </div>
-        )}
-        <a href="https://socq.ai/pricing?utm_source=open-social-listening&utm_medium=app&utm_campaign=topup" target="_blank" rel="noopener" className="text-[13px] font-medium">
-          {m.shell.topUp}
-        </a>
-      </div>
+          {monthBudget !== null && monthUsed !== null && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between text-xs text-ink-3">
+                <span>{m.shell.thisMonth}</span>
+                <span className="tabular">
+                  {formatInt(monthUsed)} / {formatInt(monthBudget)}
+                </span>
+              </div>
+              <Meter value={monthUsed} max={monthBudget} label={m.shell.budgetUsed} />
+            </div>
+          )}
+          <a
+            href="https://socq.ai/pricing?utm_source=open-social-listening&utm_medium=app&utm_campaign=topup"
+            target="_blank"
+            rel="noopener"
+            className="group inline-flex items-center gap-1 self-start text-[13px] font-medium no-underline hover:underline"
+          >
+            {m.shell.topUp}
+            <ArrowUpRight aria-hidden="true" className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </a>
+        </div>
       )}
       <LanguageSelect className="hidden self-start md:inline-flex" placement="up" align="start" />
       <div className="hidden justify-between px-1.5 text-xs md:flex">
-        <a href={SOCQ_URL} target="_blank" rel="noopener" className="text-ink-3 hover:text-ink">
+        <a href={SOCQ_URL} target="_blank" rel="noopener" className="text-ink-3 no-underline transition-colors hover:text-ink">
           {m.shell.poweredBy}
         </a>
-        <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-ink">
+        <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="text-ink-3 no-underline transition-colors hover:text-ink">
           v0.1 · GitHub
         </a>
       </div>

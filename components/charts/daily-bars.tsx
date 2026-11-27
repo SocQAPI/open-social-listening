@@ -60,30 +60,43 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
             return (
               <div
                 key={d.date}
-                className="relative flex h-full flex-col items-center justify-end"
+                className="relative flex h-full cursor-default flex-col items-center justify-end focus-visible:outline-none"
                 onMouseEnter={() => setHover(i)}
                 onFocus={() => setHover(i)}
                 onBlur={() => setHover(null)}
                 tabIndex={0}
                 aria-label={m.chart.mentionsOn(shortDate(d.date), d.count)}
               >
+                {/* A soft band behind the hovered day makes the target obvious without a crosshair. */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-y-0 left-1/2 w-[85%] max-w-12 -translate-x-1/2 rounded-md bg-subtle transition-opacity duration-150",
+                    active ? "opacity-100" : "opacity-0",
+                  )}
+                />
                 {d.count === peak && peak > 0 && !active && (
                   // Out of the flow: a label inside the column would make it taller than the plot and push every column down.
-                  <span className="tabular absolute left-1/2 -translate-x-1/2 text-xs font-semibold text-ink" style={{ bottom: Math.max(2, h) + 4 }}>
+                  <span
+                    className="animate-fade-in tabular absolute left-1/2 -translate-x-1/2 text-xs font-semibold text-ink"
+                    style={{ bottom: Math.max(2, h) + 4, animationDelay: `${Math.min(500, data.length * 25 + 300)}ms` }}
+                  >
                     {formatInt(d.count)}
                   </span>
                 )}
                 <div
                   className={cn(
-                    "w-3/5 max-w-6 rounded-t origin-bottom transition-[height,background-color] duration-500 ease-out",
-                    active ? "bg-brand-strong" : "bg-brand",
+                    "animate-grow-y relative w-3/5 max-w-6 origin-bottom rounded-t transition-[height,background-color] duration-500 ease-out",
+                    active ? "bg-brand-strong" : hover !== null ? "bg-brand/70" : "bg-brand",
                   )}
-                  style={{ height: Math.max(d.count > 0 ? 2 : 0, h) }}
+                  style={{ height: Math.max(d.count > 0 ? 2 : 0, h), animationDelay: `${i * 25}ms` }}
                 />
                 {active && (
                   <div
                     role="tooltip"
-                    className="animate-fade-in pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 -translate-y-1.5 whitespace-nowrap rounded-lg bg-ink px-2.5 py-2 text-xs leading-[1.45] text-white"
+                    className="animate-pop-up pointer-events-none absolute left-1/2 z-10 origin-bottom -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink px-2.5 py-2 text-xs leading-[1.45] text-white shadow-[0_8px_20px_rgba(23,24,28,0.2)]"
+                    // Just above the hovered column rather than at the top of the plot.
+                    style={{ bottom: Math.max(2, h) + 8 }}
                   >
                     <div className="font-semibold">{shortDate(d.date)}</div>
                     <div className="tabular">
@@ -104,9 +117,9 @@ export function DailyBars({ data, label }: { data: DailyPoint[]; label: string }
         </div>
       </div>
       <figcaption className="sr-only">{label}</figcaption>
-      <details className="mt-1 text-[13px] text-ink-3">
-        <summary className="cursor-pointer select-none">{m.chart.showAsTable}</summary>
-        <table className="tabular mt-2 w-full max-w-sm border-collapse">
+      <details className="group/table mt-1 text-[13px] text-ink-3">
+        <summary className="cursor-pointer select-none transition-colors hover:text-ink">{m.chart.showAsTable}</summary>
+        <table className="tabular animate-rise mt-2 w-full max-w-sm border-collapse">
           <thead>
             <tr className="text-left text-xs">
               <th scope="col" className="py-1 font-medium">{m.chart.day}</th>

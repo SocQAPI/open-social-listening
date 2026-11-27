@@ -290,6 +290,8 @@ export const id: Messages = {
     pause: "Jeda",
     saveChanges: "Simpan perubahan",
     savedState: "Tersimpan",
+    unsavedChanges: "Ada perubahan yang belum disimpan",
+    discard: "Batalkan",
     tracking: "Yang kami pantau",
     brandHint: "Nama dan akun yang dipakai orang untuk menyebut Anda.",
     brandPlaceholder: "mis. @brandanda",

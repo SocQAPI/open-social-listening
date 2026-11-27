@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, errorText } from "@/lib/ui/api";
 import { LogoMark } from "@/components/shell/logo";
-import { Spinner } from "@/components/ui/spinner";
 import { useI18n } from "@/lib/i18n";
 
 interface ProjectSummary {
@@ -38,16 +37,15 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg text-ink-3">
-      <LogoMark size={40} />
+      <span className="animate-pop-in">
+        <LogoMark size={44} animated={!error} />
+      </span>
       {error ? (
-        <p role="alert" className="m-0 max-w-sm text-center">
+        <p role="alert" className="animate-rise m-0 max-w-sm text-center">
           {error}
         </p>
       ) : (
-        <span className="inline-flex items-center gap-2">
-          <Spinner className="size-4" />
-          {m.common.loading}
-        </span>
+        <span className="animate-fade-in text-sm [animation-delay:400ms]">{m.common.loading}</span>
       )}
     </main>
   );

@@ -284,6 +284,8 @@ export const ja: Messages = {
     pause: "一時停止",
     saveChanges: "変更を保存",
     savedState: "保存済み",
+    unsavedChanges: "保存していない変更があります",
+    discard: "変更を破棄",
     tracking: "モニタリング対象",
     brandHint: "あなたを指す名前やアカウント名。",
     brandPlaceholder: "例：@yourbrand",

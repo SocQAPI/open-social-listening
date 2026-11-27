@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Check, Pause, Play } from "lucide-react";
+import { Check, Pause, Play, Trash2 } from "lucide-react";
 import { api, errorText, useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
 import { useI18n } from "@/lib/i18n";
 import { creditsToUsd } from "@/lib/ui/format";
 import { INTERVALS, SOURCES, draftEstimate, limitOptions, searchCost, suggestedBudget, toCompetitors, type ProjectDraft } from "@/lib/ui/draft";
 import { Button } from "@/components/ui/button";
-import { Card, Field, Meter, Notice, Select, Skeleton, Switch, TextInput } from "@/components/ui/primitives";
+import { Card, CountUp, Dropdown, Field, Meter, Notice, Select, Skeleton, Switch, TextInput } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
 import { BroadTermNotice, TermEditor } from "@/components/ui/term-editor";
 import { useToast } from "@/components/ui/toast";
@@ -127,7 +127,8 @@ export function SettingsView() {
   const overBudget = budget > 0 && estimate.perMonth > budget;
 
   return (
-    <div className="flex max-w-[1080px] flex-col gap-5">
+    <>
+    <div className="stagger flex max-w-[1080px] flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="font-display m-0 text-[28px] font-semibold tracking-[-0.02em]">{st.title}</h1>
@@ -148,7 +149,7 @@ export function SettingsView() {
       </header>
       <ProjectBanner />
 
-      <form id="project-settings" onSubmit={save} className="flex flex-col gap-5">
+      <form id="project-settings" onSubmit={save} className="stagger flex flex-col gap-5">
       <Section id="tracking" title={st.tracking} meta={p.searchesPerRun(estimate.searches)}>
         <Field label={p.name} className="max-w-md">
           <TextInput value={draft.name} onChange={(e) => update({ name: e.target.value })} maxLength={80} />
@@ -194,12 +195,12 @@ export function SettingsView() {
                 const cost = searchCost(src, cfg.resultsLimit);
                 const label = t.sourceNames[src.id] ?? src.label;
                 return (
-                  <tr key={src.id} className="border-t border-track">
+                  <tr key={src.id} className="border-t border-track transition-colors duration-150 hover:bg-[#fafaf8]">
                     <td className="py-2">
                       <Switch checked={cfg.enabled} onChange={(v) => setSource(src.id, { enabled: v })} label={st.sourceToggle(label)} />
                     </td>
-                    <td className={cn("py-2 font-medium", !cfg.enabled && "text-ink-4")}>{label}</td>
-                    <td className="py-2 font-mono text-xs text-ink-3">{src.endpoint}</td>
+                    <td className={cn("py-2 font-medium transition-colors duration-200", !cfg.enabled && "text-ink-4")}>{label}</td>
+                    <td className={cn("py-2 font-mono text-xs transition-colors duration-200", cfg.enabled ? "text-ink-3" : "text-ink-4/70")}>{src.endpoint}</td>
                     <td className="py-2">
                       {src.supportsResultsLimit ? (
                         <Select aria-label={st.resultsOn(label)} value={cfg.resultsLimit} onChange={(e) => setSource(src.id, { resultsLimit: Number(e.target.value) })} disabled={!cfg.enabled} className="min-h-9">
@@ -213,8 +214,10 @@ export function SettingsView() {
                         <span className="text-ink-4">{st.setByPlatform}</span>
                       )}
                     </td>
-                    <td className="py-2 text-right">{t.common.credits(String(cost))}</td>
-                    <td className="py-2 text-right text-ink-2">{cfg.enabled ? fmt.credits(cost * estimate.searches * estimate.runsPerMonth) : "—"}</td>
+                    <td className={cn("py-2 text-right transition-colors duration-200", !cfg.enabled && "text-ink-4")}>{t.common.credits(String(cost))}</td>
+                    <td className="py-2 text-right text-ink-2">
+                      {cfg.enabled ? <CountUp value={cost * estimate.searches * estimate.runsPerMonth} format={fmt.credits} duration={450} /> : <span className="text-ink-4">—</span>}
+                    </td>
                   </tr>
                 );
               })}
@@ -225,8 +228,12 @@ export function SettingsView() {
                 <td className="py-2.5" colSpan={3}>
                   {st.total(estimate.searches, t.intervals[draft.intervalMinutes] ?? st.everyMinutes(draft.intervalMinutes))}
                 </td>
-                <td className="py-2.5 text-right">{st.perRunValue(formatInt(estimate.perRun))}</td>
-                <td className="py-2.5 text-right">{fmt.credits(estimate.perMonth)}</td>
+                <td className="py-2.5 text-right">
+                  <CountUp value={Math.round(estimate.perRun)} format={(n) => st.perRunValue(formatInt(n))} duration={450} />
+                </td>
+                <td className="py-2.5 text-right">
+                  <CountUp value={estimate.perMonth} format={fmt.credits} duration={450} />
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -274,6 +281,40 @@ export function SettingsView() {
       <ConnectionSection />
       <DangerSection projectId={projectId} name={project.name} mentions={project.counts?.mentions ?? null} />
     </div>
+
+      {/* Floats up while there are unsaved edits, so saving never needs a scroll back to the top. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 md:left-[max(240px,20vw)]">
+        <div
+          aria-hidden={!dirty}
+          inert={!dirty}
+          className={cn(
+            "flex max-w-full flex-wrap items-center gap-3 rounded-2xl bg-ink py-2 pr-2 pl-4 text-sm text-white shadow-[0_16px_40px_rgba(23,24,28,0.28)]",
+            "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.9,0.3,1.1)]",
+            dirty ? "pointer-events-auto translate-y-0 opacity-100" : "translate-y-[140%] opacity-0",
+          )}
+        >
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="relative flex size-2">
+              <span className="animate-ping-soft absolute inset-0 rounded-full bg-accent" />
+              <span className="relative size-2 rounded-full bg-accent" />
+            </span>
+            {st.unsavedChanges}
+          </span>
+          <span className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setDraft(toDraft(project))}
+              className="min-h-9 cursor-pointer rounded-[9px] px-3 font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              {st.discard}
+            </button>
+            <Button type="submit" form="project-settings" size="sm" variant="primary" loading={saving} icon={<Check aria-hidden="true" className="size-4" />}>
+              {st.saveChanges}
+            </Button>
+          </span>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -339,8 +380,11 @@ function AlertsSection({ projectId }: { projectId: number }) {
           {alerts.data.items.map((a, i) => {
             const k = ALERT_KINDS.find((x) => x.value === a.kind);
             return (
-              <li key={a.id} className={cn("animate-fade-in flex flex-wrap items-center gap-3 px-3.5 py-3", i > 0 && "border-t border-track")}>
-                <span aria-hidden="true" className="inline-flex size-8 items-center justify-center rounded-lg bg-subtle text-[11px] font-bold">
+              <li key={a.id} className={cn("animate-rise flex flex-wrap items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#fafaf8]", i > 0 && "border-t border-track")}>
+                <span
+                  aria-hidden="true"
+                  className={cn("inline-flex size-8 items-center justify-center rounded-lg text-[11px] font-bold transition-colors duration-200", a.enabled ? "bg-ink text-white" : "bg-subtle text-ink-3")}
+                >
                   {k?.badge}
                 </span>
                 <span className="flex min-w-0 flex-[1_1_220px] flex-col">
@@ -364,15 +408,17 @@ function AlertsSection({ projectId }: { projectId: number }) {
         </ul>
       )}
       <div className="flex flex-wrap items-end gap-2.5">
-        <Field label={st.channel}>
-          <Select value={kind} onChange={(e) => setKind(e.target.value as AlertDTO["kind"])} className="min-h-11">
-            {ALERT_KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {st.alertKinds[k.value]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="flex flex-col gap-2 font-medium">
+          <span aria-hidden="true">{st.channel}</span>
+          <Dropdown<AlertDTO["kind"]>
+            label={st.channel}
+            value={kind}
+            onChange={setKind}
+            size="lg"
+            buttonClassName="min-w-36 border-input font-medium"
+            options={ALERT_KINDS.map((k) => ({ value: k.value, label: st.alertKinds[k.value] }))}
+          />
+        </div>
         <Field label={kind === "email" ? st.emailAddress : st.webhookUrl} className="min-w-[260px] flex-[1_1_320px]">
           <TextInput value={target} onChange={(e) => setTarget(e.target.value)} placeholder={meta.placeholder} type={kind === "email" ? "email" : "url"} />
         </Field>
@@ -428,10 +474,10 @@ function ConnectionSection() {
         <Skeleton className="h-10 w-80" />
       ) : (
         <div className="flex flex-wrap items-center gap-4">
-          <span className="rounded-lg bg-bg px-3 py-2 font-mono text-sm">{settings.apiKey.configured ? settings.apiKey.preview : st.noKeyYet}</span>
+          <span className="rounded-lg border border-track bg-bg px-3 py-2 font-mono text-sm">{settings.apiKey.configured ? settings.apiKey.preview : st.noKeyYet}</span>
           {settings.apiKey.configured && account?.credits != null && (
-            <span className="inline-flex items-center gap-1.5 text-info-fg">
-              <Check aria-hidden="true" className="size-4" strokeWidth={2.4} />
+            <span className="animate-fade-in inline-flex items-center gap-1.5 text-info-fg">
+              <Check aria-hidden="true" className="animate-pop-in size-4" strokeWidth={2.4} />
               {st.connectedCredits(fmt.int(account.credits))}
             </span>
           )}
@@ -444,9 +490,9 @@ function ConnectionSection() {
         </div>
       )}
       {editing && (
-        <div className="animate-fade-in flex flex-wrap items-end gap-2.5">
+        <div className="animate-rise flex flex-wrap items-end gap-2.5">
           <Field label={st.newKey} className="min-w-[280px] flex-[1_1_360px]">
-            <TextInput mono type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder={t.onboarding.keyPlaceholder} />
+            <TextInput mono type="password" autoComplete="off" autoFocus value={key} onChange={(e) => setKey(e.target.value)} placeholder={t.onboarding.keyPlaceholder} />
           </Field>
           <Button variant="ink" onClick={save} loading={saving} disabled={key.trim().length < 8}>
             {st.checkAndSave}
@@ -508,15 +554,15 @@ function DangerSection({ projectId, name, mentions }: { projectId: number; name:
           <p className="m-0 text-ink-3">{st.deleteBody(mentions !== null ? fmt.int(mentions) : null)}</p>
         </div>
         {!confirming && (
-          <Button variant="danger" onClick={() => setConfirming(true)}>
+          <Button variant="danger" onClick={() => setConfirming(true)} icon={<Trash2 aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:-rotate-12" />}>
             {st.deleteProject}
           </Button>
         )}
       </div>
       {confirming && (
-        <div className="animate-fade-in flex flex-wrap items-end gap-2.5">
+        <div className="animate-rise flex flex-wrap items-end gap-2.5">
           <Field label={st.typeToConfirm(name)} className="min-w-[240px] flex-[1_1_300px]">
-            <TextInput value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
+            <TextInput value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus />
           </Field>
           <Button variant="danger" onClick={remove} loading={busy} disabled={typed.trim() !== name}>
             {st.deleteForGood}

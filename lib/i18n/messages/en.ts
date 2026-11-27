@@ -295,6 +295,8 @@ export const en = {
     pause: "Pause",
     saveChanges: "Save changes",
     savedState: "Saved",
+    unsavedChanges: "Unsaved changes",
+    discard: "Discard",
     tracking: "What we listen for",
     brandHint: "Names and handles people use for you.",
     brandPlaceholder: "e.g. @yourbrand",

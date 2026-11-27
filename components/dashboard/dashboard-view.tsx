@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 import { useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
 import { useI18n } from "@/lib/i18n";
 import { creditsToUsd } from "@/lib/ui/format";
 import { DailyBars } from "@/components/charts/daily-bars";
 import { HBars, StackedShare, type ShareSegment } from "@/components/charts/share";
-import { Card, CardHeader, EmptyState, Skeleton } from "@/components/ui/primitives";
+import { Card, CardHeader, CountUp, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
 import { PageHeader, ProjectBanner, RunButton } from "@/components/shell/page-header";
 import { useProject } from "@/components/shell/project-context";
@@ -42,11 +42,14 @@ function topSource(bySource: Record<string, number>): string | null {
   return best;
 }
 
-function Kpi({ label, value, note }: { label: string; value: string; note: string }) {
+/** A headline number. It counts up to its value, and to the new one when the range changes. */
+function Kpi({ label, value, format, note }: { label: string; value: number | null; format: (n: number) => string; note: string }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-surface px-[18px] py-4">
+    <div className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-surface px-[18px] py-4 shadow-[0_1px_2px_rgba(23,24,28,0.04)] transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_8px_24px_rgba(23,24,28,0.08)]">
       <span className="text-[13px] font-medium text-ink-3">{label}</span>
-      <span className="font-display tabular text-[32px] leading-[1.1] font-semibold tracking-[-0.02em]">{value}</span>
+      <span className="font-display tabular text-[32px] leading-[1.1] font-semibold tracking-[-0.02em]">
+        {value === null ? "—" : <CountUp value={value} format={format} />}
+      </span>
       <span className="text-[13px] text-ink-3">{note}</span>
     </div>
   );
@@ -57,6 +60,13 @@ const statusPill: Record<string, string> = {
   partial: "bg-accent-tint text-[#7a2e0e]",
   failed: "bg-accent-tint text-[#7a2e0e]",
   running: "bg-info-bg text-info-fg",
+};
+
+const statusDot: Record<string, string> = {
+  succeeded: "bg-[#3f8f5f]",
+  partial: "bg-accent",
+  failed: "bg-accent-strong",
+  running: "bg-brand",
 };
 
 export function DashboardView() {
@@ -146,17 +156,19 @@ export function DashboardView() {
       <ProjectBanner />
 
       {spike && (
-        <div role="status" className="animate-rise flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5">
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
-            <TrendingUp aria-hidden="true" className="size-[18px] text-accent-text" />
+        <div role="status" className="animate-rise flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(23,24,28,0.04)]">
+          <span className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
+            <span aria-hidden="true" className="animate-ping-soft absolute inset-0 rounded-lg bg-accent/30" />
+            <TrendingUp aria-hidden="true" className="relative size-[18px] text-accent-text" />
           </span>
           <p className="m-0 flex-[1_1_320px]">
             <strong>{d.spikeTitle(fmt.shortDate(new Date(`${spike.date}T00:00:00`)))}</strong>
             {t.common.sentenceGap}
             {d.spikeBody(formatInt(spike.total), spike.ratio.toFixed(1), sourceName(spike.top))}
           </p>
-          <Link href={`/p/${projectId}/inbox`} className="font-medium">
+          <Link href={`/p/${projectId}/inbox`} className="group inline-flex items-center gap-1 font-medium no-underline hover:underline">
             {d.viewMentions}
+            <ArrowRight aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
         </div>
       )}
@@ -164,24 +176,23 @@ export function DashboardView() {
       <section aria-label={d.keyNumbers} className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
         {s ? (
           <>
-            <Kpi
-              label={d.mentionsKpi(days)}
-              value={formatInt(s.totals.mentions)}
-              note={changeNote}
-            />
+            <Kpi label={d.mentionsKpi(days)} value={s.totals.mentions} format={formatInt} note={changeNote} />
             <Kpi
               label={d.shareKpi}
-              value={brandVoice ? `${Math.round(brandVoice.share * 100)}%` : "—"}
+              value={brandVoice ? Math.round(brandVoice.share * 100) : null}
+              format={(n) => `${n}%`}
               note={s.shareOfVoice.length > 1 ? d.against(s.shareOfVoice.length - 1) : d.addCompetitors}
             />
             <Kpi
               label={d.negativeKpi}
-              value={formatInt(s.sentiment.negative)}
+              value={s.sentiment.negative}
+              format={formatInt}
               note={scored ? d.negativeNote(Math.round((s.sentiment.negative / scored) * 100), formatInt(scored)) : d.noSentiment}
             />
             <Kpi
               label={d.creditsKpi}
-              value={formatInt(s.credits.thisMonth)}
+              value={Math.round(s.credits.thisMonth)}
+              format={formatInt}
               note={d.creditsNote(budget > 0 ? formatInt(budget) : null, creditsToUsd(s.credits.thisMonth))}
             />
           </>
@@ -274,12 +285,19 @@ export function DashboardView() {
               </thead>
               <tbody>
                 {(s?.recentRuns ?? []).map((r) => (
-                  <tr key={r.id} className="border-t border-track">
+                  <tr key={r.id} className="border-t border-track transition-colors duration-150 hover:bg-[#fafaf8]">
                     <td className="py-2.5">{fmt.dateTime(r.startedAt)}</td>
-                    <td className="py-2.5 text-right">{formatInt(r.newMentions)}</td>
+                    <td className="py-2.5 text-right">{r.newMentions > 0 ? <span className="font-semibold">+{formatInt(r.newMentions)}</span> : <span className="text-ink-4">0</span>}</td>
                     <td className="py-2.5 text-right">{formatInt(r.creditsUsed)}</td>
                     <td className="py-2.5 pl-4">
-                      <span title={r.error ?? undefined} className={cn("inline-flex min-h-6 items-center rounded-md px-2 text-xs font-semibold", statusPill[r.status] ?? "bg-subtle text-ink-2")}>
+                      <span
+                        title={r.error ?? undefined}
+                        className={cn("inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 text-xs font-semibold", statusPill[r.status] ?? "bg-subtle text-ink-2")}
+                      >
+                        <span aria-hidden="true" className="relative flex size-1.5">
+                          {r.status === "running" && <span className="animate-ping-soft absolute inset-0 rounded-full bg-brand" />}
+                          <span className={cn("relative size-1.5 rounded-full", statusDot[r.status] ?? "bg-ink-4")} />
+                        </span>
                         {d.statuses[r.status] ?? r.status}
                       </span>
                     </td>
