@@ -1,5 +1,7 @@
 # Open Social Listening
 
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Bahasa Indonesia](README.id.md)
+
 **Open-source, self-hosted social listening.** Track your brand, your competitors and the topics your buyers
 talk about across Reddit, X, YouTube, TikTok, Instagram, LinkedIn, Threads, news sites and the open web, in one
 inbox you run yourself.
