@@ -1,7 +1,9 @@
+# Open Social Listening. Start with `docker compose up -d`, then open http://localhost:3000.
+# Deployment guide (server, HTTPS, updates, backups): docs/deploy.md
 services:
   open-social-listening:
-    build: .
-    image: open-social-listening
+    # Prebuilt for x86-64 and ARM64. To build from source instead, replace this line with `build: .`
+    image: ghcr.io/socqapi/open-social-listening:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -9,4 +11,5 @@ services:
       - path: .env
         required: false
     volumes:
+      # The database lives here, next to this file. Back up this folder.
       - ./data:/app/data
