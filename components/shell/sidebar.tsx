@@ -66,7 +66,9 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
   return (
     <nav
       aria-label={m.shell.primaryNav}
-      className="flex flex-[1_1_240px] flex-col gap-3 border-b border-line bg-bg px-4 py-3 md:gap-6 md:border-r md:border-b-0 md:py-5"
+      // Desktop: as tall as the window and pinned while the page scrolls, so the balance, language and links at
+      // the bottom are always in view; a long project list scrolls inside the sidebar.
+      className="flex flex-[1_1_240px] flex-col gap-3 border-b border-line bg-bg px-4 py-3 md:sticky md:top-0 md:h-dvh md:self-start md:gap-6 md:overflow-y-auto md:border-r md:border-b-0 md:py-5"
     >
       {/* Phones: language next to the logo. Desktop: at the bottom, so the logo keeps one line in the narrow sidebar. */}
       <div className="flex items-center justify-between gap-2">
