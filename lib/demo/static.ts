@@ -13,3 +13,8 @@ export const REPO_URL = "https://github.com/SocQAPI/open-social-listening";
 export function demoStaticParams(): { projectId: string }[] {
   return STATIC_DEMO ? [{ projectId: "1" }] : [];
 }
+
+/** The step-by-step guides in docs/, in the interface language (English is the file without a suffix). */
+export function guideUrl(doc: "deploy" | "getting-started", locale: string): string {
+  return `${REPO_URL}/blob/main/docs/${doc}${locale === "en" ? "" : `.${locale}`}.md`;
+}

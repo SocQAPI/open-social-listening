@@ -99,6 +99,8 @@ export const de: Messages = {
     createProject: "Projekt anlegen",
     staticDemoBanner: "Dies ist eine Live-Demo mit Beispieldaten einer erfundenen Marke. Betreiben Sie Open Social Listening auf Ihrem eigenen Server, um Ihre Marke zu verfolgen.",
     getOnGithub: "Auf GitHub ansehen",
+    deployGuide: "Installationsanleitung",
+    gettingStarted: "Erste Schritte",
   },
   terms: {
     remove: (term: string) => `${term} entfernen`,
@@ -255,6 +257,8 @@ export const de: Messages = {
     titleNew: "Neues Projekt einrichten",
     titleFirst: "Ihr erstes Projekt einrichten",
     intro: "Drei Schritte, etwa zwei Minuten. Alles lässt sich später in den Einstellungen ändern.",
+    guideLead: "Zum ersten Mal hier?",
+    guideLink: "Zur Schritt-für-Schritt-Anleitung",
     stepsLabel: "Schritte",
     steps: ["SocQ verbinden", "Was beobachtet wird", "Quellen und Budget"],
     connectTitle: "Ihr SocQ-Konto verbinden",

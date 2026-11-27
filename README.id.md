@@ -12,6 +12,12 @@ dikumpulkan melalui
 [SocQ API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening),
 yang menagih per hasil, sehingga brand kecil yang dicek sekali sehari hanya menghabiskan beberapa dolar per bulan.
 
+<p>
+  <a href="https://socqapi.github.io/open-social-listening/"><img alt="Demo langsung" src="https://img.shields.io/badge/Demo%20langsung-f64c31?style=for-the-badge"></a>
+  <a href="docs/deploy.id.md"><img alt="Panduan deployment" src="https://img.shields.io/badge/Panduan%20deployment-17181c?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="docs/getting-started.id.md"><img alt="Panduan memulai" src="https://img.shields.io/badge/Panduan%20memulai-2a78d6?style=for-the-badge"></a>
+</p>
+
 **[Coba demo langsung](https://socqapi.github.io/open-social-listening/)**: antarmuka lengkap dengan data contoh untuk brand fiktif, berjalan di browser Anda. Tidak perlu instalasi dan tidak perlu API key.
 
 ![Kotak masuk: setiap mention tentang brand, kompetitor, dan topik, dengan filter berdasarkan sumber, sentimen, dan periode](docs/screenshots/inbox.png)
@@ -44,8 +50,8 @@ yang menagih per hasil, sehingga brand kecil yang dicek sekali sehari hanya meng
 Anda membutuhkan Docker, atau Node.js 22 atau yang lebih baru.
 
 ```bash
-git clone https://github.com/SocQAPI/open-social-listening.git
-cd open-social-listening
+mkdir open-social-listening && cd open-social-listening
+curl -fsSLO https://raw.githubusercontent.com/SocQAPI/open-social-listening/main/docker-compose.yml
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
@@ -56,9 +62,11 @@ Anda, tempelkan di langkah pertama onboarding, lalu beri tahu aplikasi apa yang 
 
 ![Onboarding: hubungkan SocQ, pilih apa yang dipantau, lalu tentukan sumber dan anggaran](docs/screenshots/onboarding.png)
 
-Untuk mencobanya tanpa Docker, `npm install && npm run dev` menjalankan aplikasi yang sama di port 3000. Untuk
-instalasi jangka panjang, gunakan image Docker: image ini dibangun dari `output: "standalone"` dan sudah menyertakan
-file statis.
+**Ingin menjalankannya di server?** [Panduan deployment](docs/deploy.id.md) menjelaskan langkah demi langkah, mulai
+dari server Linux kosong, domain sendiri dengan HTTPS, sampai pembaruan dan backup. Image-nya diterbitkan sebagai
+`ghcr.io/socqapi/open-social-listening` untuk x86-64 dan ARM64. Cara menghubungkan SocQ dan menyiapkan proyek pertama
+dijelaskan lengkap dengan tangkapan layar di [Panduan memulai](docs/getting-started.id.md). Tanpa Docker,
+`npm install && npm run dev` menjalankan aplikasi yang sama di port 3000.
 
 Jika aplikasi bisa diakses dari internet, atur `OSL_PASSWORD` agar setiap halaman dan route API meminta kata sandi
 tersebut.

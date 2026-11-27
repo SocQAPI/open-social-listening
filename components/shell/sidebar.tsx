@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { ArrowUpRight, BarChart3, Globe, Inbox, Plus, SlidersHorizontal } from "lucide-react";
+import { ArrowUpRight, BarChart3, BookOpen, Globe, Inbox, Plus, SlidersHorizontal } from "lucide-react";
 import { LOCALES, useI18n, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/ui/cn";
+import { STATIC_DEMO, guideUrl } from "@/lib/demo/static";
 import { CountUp, Dropdown, Meter, Skeleton } from "@/components/ui/primitives";
 import { Logo } from "./logo";
 
@@ -141,9 +142,11 @@ function NavLinks({ items, pathname }: { items: { href: string; label: string; i
 export function Sidebar({ projectId, projects, unread, balance, monthUsed, monthBudget, connected }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { m, fmt } = useI18n();
+  const { m, fmt, locale } = useI18n();
   const formatInt = fmt.int;
   const base = `/p/${projectId}`;
+  // The public demo points to the deployment guide; a running install to the getting-started guide.
+  const guide = STATIC_DEMO ? { href: guideUrl("deploy", locale), label: m.shell.deployGuide } : { href: guideUrl("getting-started", locale), label: m.shell.gettingStarted };
   const nav = [
     { href: `${base}/inbox`, label: m.shell.inbox, icon: Inbox, badge: unread },
     { href: `${base}/dashboard`, label: m.shell.dashboard, icon: BarChart3, badge: null },
@@ -267,6 +270,18 @@ export function Sidebar({ projectId, projects, unread, balance, monthUsed, month
           </a>
         </div>
       )}
+      <a
+        href={guide.href}
+        target="_blank"
+        rel="noopener"
+        className="group hidden min-h-10 items-center gap-2.5 rounded-xl border border-dashed border-line-strong px-3 text-[13px] font-medium text-ink-2 no-underline transition-[background-color,border-color,color] duration-150 hover:border-solid hover:border-ink hover:bg-surface hover:text-ink md:flex"
+      >
+        <span aria-hidden="true" className="inline-flex size-6 items-center justify-center rounded-md bg-accent-tint text-accent-text transition-transform duration-200 group-hover:-rotate-6">
+          <BookOpen className="size-3.5" />
+        </span>
+        <span className="flex-1">{guide.label}</span>
+        <ArrowUpRight aria-hidden="true" className="size-3.5 text-ink-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ink" />
+      </a>
       <LanguageSelect className="hidden self-start md:inline-flex" placement="up" align="start" />
       <div className="hidden justify-between px-1.5 text-xs md:flex">
         <a href={SOCQ_URL} target="_blank" rel="noopener" className="text-ink-3 no-underline transition-colors hover:text-ink">

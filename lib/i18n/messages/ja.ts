@@ -97,6 +97,8 @@ export const ja: Messages = {
     createProject: "プロジェクトを作成",
     staticDemoBanner: "架空のブランドのサンプルデータで動くライブデモです。自社ブランドをモニタリングするには、ご自身のサーバーでOpen Social Listeningを動かしてください。",
     getOnGithub: "GitHubで入手",
+    deployGuide: "デプロイガイド",
+    gettingStarted: "使い方ガイド",
   },
   terms: {
     remove: (term: string) => `${term}を削除`,
@@ -249,6 +251,8 @@ export const ja: Messages = {
     titleNew: "新しいプロジェクトを設定",
     titleFirst: "最初のプロジェクトを設定",
     intro: "3ステップ、約2分で完了します。内容はあとから設定でいつでも変更できます。",
+    guideLead: "はじめてですか？",
+    guideLink: "画面つきの手順ガイドを見る",
     stepsLabel: "ステップ",
     steps: ["SocQを接続", "モニタリング対象", "ソースと予算"],
     connectTitle: "SocQアカウントを接続",

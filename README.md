@@ -11,6 +11,12 @@ in a SQLite file on your server, and there is no monthly seat price. Posts are c
 [SocQ API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening),
 which bills per result, so a small brand checked once a day costs a few dollars a month.
 
+<p>
+  <a href="https://socqapi.github.io/open-social-listening/"><img alt="Live demo" src="https://img.shields.io/badge/Live%20demo-f64c31?style=for-the-badge"></a>
+  <a href="docs/deploy.md"><img alt="Deployment guide" src="https://img.shields.io/badge/Deployment%20guide-17181c?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="docs/getting-started.md"><img alt="Getting started" src="https://img.shields.io/badge/Getting%20started-2a78d6?style=for-the-badge"></a>
+</p>
+
 **[Try the live demo](https://socqapi.github.io/open-social-listening/)**: the full interface with sample data for a made-up brand, running in your browser. Nothing to install, and no API key needed.
 
 ![The inbox: every mention of the brand, competitors and topics, with filters by source, sentiment and period](docs/screenshots/inbox.png)
@@ -40,8 +46,8 @@ which bills per result, so a small brand checked once a day costs a few dollars 
 You need Docker, or Node.js 22 or newer.
 
 ```bash
-git clone https://github.com/SocQAPI/open-social-listening.git
-cd open-social-listening
+mkdir open-social-listening && cd open-social-listening
+curl -fsSLO https://raw.githubusercontent.com/SocQAPI/open-social-listening/main/docker-compose.yml
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
@@ -52,8 +58,11 @@ paste it on the first onboarding step, then tell the app what to listen for.
 
 ![Onboarding: connect SocQ, choose what to track, then pick sources and a budget](docs/screenshots/onboarding.png)
 
-To try it without Docker, `npm install && npm run dev` serves the same app on port 3000. For a long-running
-install, use the Docker image: it is built from `output: "standalone"` and includes the static files.
+**Putting it on a server?** The [deployment guide](docs/deploy.md) goes step by step from a fresh Linux server to
+your own domain with HTTPS, updates and backups. The image is published as `ghcr.io/socqapi/open-social-listening`
+for x86-64 and ARM64. Connecting SocQ and setting up your first project are shown screen by screen in the
+[getting started guide](docs/getting-started.md). To run the code without Docker, `npm install && npm run dev` serves
+the same app on port 3000.
 
 If the app is reachable from the internet, set `OSL_PASSWORD` so every page and API route asks for it.
 

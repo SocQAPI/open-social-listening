@@ -104,6 +104,8 @@ export const en = {
     createProject: "Create your project",
     staticDemoBanner: "This is a live demo with sample data for a made-up brand. Run Open Social Listening on your own server to track yours.",
     getOnGithub: "Get it on GitHub",
+    deployGuide: "Deployment guide",
+    gettingStarted: "Getting started",
   },
   terms: {
     remove: (term: string) => `Remove ${term}`,
@@ -260,6 +262,8 @@ export const en = {
     titleNew: "Set up a new project",
     titleFirst: "Set up your first project",
     intro: "Three steps, about two minutes. You can change everything later in Settings.",
+    guideLead: "First time here?",
+    guideLink: "Follow the step-by-step guide",
     stepsLabel: "Steps",
     steps: ["Connect SocQ", "What to track", "Sources and budget"],
     connectTitle: "Connect your SocQ account",

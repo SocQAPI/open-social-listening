@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check } from "lucide-react";
 import { api, errorText, useApi } from "@/lib/ui/api";
 import { cn } from "@/lib/ui/cn";
+import { guideUrl } from "@/lib/demo/static";
 import { useI18n } from "@/lib/i18n";
 import { creditsToUsd } from "@/lib/ui/format";
 import { INTERVALS, SOURCES, defaultSources, draftEstimate, searchCost, suggestedBudget, toCompetitors, type ProjectDraft } from "@/lib/ui/draft";
@@ -24,7 +25,7 @@ export function OnboardingView() {
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
-  const { m: t, fmt } = useI18n();
+  const { m: t, fmt, locale } = useI18n();
   const o = t.onboarding;
   const p = t.project;
   const formatInt = fmt.int;
@@ -138,6 +139,19 @@ export function OnboardingView() {
         <div className="animate-rise flex flex-col gap-1.5">
           <h1 className="font-display m-0 text-[32px] font-semibold tracking-[-0.02em]">{hasRealProject ? o.titleNew : o.titleFirst}</h1>
           <p className="m-0 text-[15px] text-ink-3">{o.intro}</p>
+          <p className="m-0 mt-2 inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">
+            <span className="text-ink-3">{o.guideLead}</span>
+            <a
+              href={guideUrl("getting-started", locale)}
+              target="_blank"
+              rel="noopener"
+              className="group inline-flex items-center gap-1.5 rounded-lg bg-accent-tint px-2.5 py-1 font-semibold text-accent-text no-underline transition-[background-color,transform] hover:bg-[#fcdcd5] active:scale-[0.98]"
+            >
+              <BookOpen aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:-rotate-6" />
+              {o.guideLink}
+              <ArrowRight aria-hidden="true" className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </a>
+          </p>
         </div>
 
         <ol aria-label={o.stepsLabel} className="animate-rise m-0 grid list-none grid-cols-3 gap-2 p-0 [animation-delay:60ms]">
@@ -295,11 +309,19 @@ export function OnboardingView() {
                     >
                       {on && <Check className="animate-pop-in size-3" strokeWidth={3.2} />}
                     </span>
-                    <span className="flex flex-1 flex-col">
-                      <span className="font-medium">{t.sourceNames[src.id] ?? src.label}</span>
-                      <span className="font-mono text-[11px] text-ink-3">{src.endpoint}</span>
+                    {/* Name and price share the first line; the endpoint gets the full width below and is
+                        shortened with an ellipsis rather than broken mid-word in narrow cards. */}
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="font-medium">{t.sourceNames[src.id] ?? src.label}</span>
+                        <span className="tabular shrink-0 text-[13px] whitespace-nowrap text-ink-2">
+                          {t.common.credits(String(searchCost(src, cfg?.resultsLimit ?? src.limits.default)))}
+                        </span>
+                      </span>
+                      <span title={src.endpoint} className="truncate font-mono text-[11px] text-ink-3">
+                        {src.endpoint}
+                      </span>
                     </span>
-                    <span className="tabular text-[13px] text-ink-2">{t.common.credits(String(searchCost(src, cfg?.resultsLimit ?? src.limits.default)))}</span>
                   </label>
                 );
               })}

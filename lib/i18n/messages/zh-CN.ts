@@ -96,6 +96,8 @@ export const zhCN: Messages = {
     createProject: "创建项目",
     staticDemoBanner: "这是在线演示，用的是一个虚构品牌的示例数据。把 Open Social Listening 部署到你自己的服务器上，就能监测你的品牌。",
     getOnGithub: "在 GitHub 获取",
+    deployGuide: "部署教程",
+    gettingStarted: "使用教程",
   },
   terms: {
     remove: (term: string) => `删除 ${term}`,
@@ -248,6 +250,8 @@ export const zhCN: Messages = {
     titleNew: "新建项目",
     titleFirst: "创建你的第一个项目",
     intro: "三步，大约两分钟。之后都可以在设置里修改。",
+    guideLead: "第一次用？",
+    guideLink: "看图文使用教程",
     stepsLabel: "步骤",
     steps: ["连接 SocQ", "监测内容", "数据源和预算"],
     connectTitle: "连接你的 SocQ 账号",

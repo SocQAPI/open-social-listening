@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { RefreshCw } from "lucide-react";
+import { BookOpen, Github, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
-import { REPO_URL, STATIC_DEMO } from "@/lib/demo/static";
+import { REPO_URL, STATIC_DEMO, guideUrl } from "@/lib/demo/static";
 import { useI18n, type Messages } from "@/lib/i18n";
 import { pausedText, useProject } from "./project-context";
 
@@ -64,18 +64,31 @@ export function PageHeader({ title, actions }: { title: string; actions?: ReactN
 }
 
 /** Demo and paused projects explain themselves right under the header. */
+const bannerPrimary =
+  "group inline-flex min-h-10 items-center gap-2 rounded-[10px] bg-ink px-4 font-semibold text-white no-underline shadow-[0_1px_2px_rgba(23,24,28,0.2)] transition-[background-color,box-shadow,transform] hover:bg-ink-2 hover:shadow-[0_4px_12px_rgba(23,24,28,0.18)] active:scale-[0.98]";
+const bannerSecondary =
+  "group inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-info-fg/20 bg-white/70 px-4 font-semibold text-info-fg no-underline transition-[background-color,border-color,transform] hover:border-info-fg/40 hover:bg-white active:scale-[0.98]";
+
 export function ProjectBanner() {
   const { project, settings } = useProject();
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   if (!project) return null;
   if (project.isDemo && STATIC_DEMO) {
+    // Visitors of the public demo mostly want to run it themselves: the deployment guide comes first.
     return (
       <Notice
         tone="info"
         action={
-          <a href={REPO_URL} className="inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 font-semibold text-white no-underline hover:bg-ink-2">
-            {m.shell.getOnGithub}
-          </a>
+          <span className="flex flex-wrap gap-2">
+            <a href={guideUrl("deploy", locale)} target="_blank" rel="noopener" className={bannerPrimary}>
+              <BookOpen aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:-rotate-6" />
+              {m.shell.deployGuide}
+            </a>
+            <a href={REPO_URL} target="_blank" rel="noopener" className={bannerSecondary}>
+              <Github aria-hidden="true" className="size-4" />
+              GitHub
+            </a>
+          </span>
         }
       >
         {m.shell.staticDemoBanner}
@@ -88,9 +101,15 @@ export function ProjectBanner() {
       <Notice
         tone="info"
         action={
-          <Link href="/onboarding?new=1" className="inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 font-semibold text-white no-underline hover:bg-ink-2">
-            {connected ? m.shell.createProject : m.shell.connectSocq}
-          </Link>
+          <span className="flex flex-wrap gap-2">
+            <Link href="/onboarding?new=1" className={bannerPrimary}>
+              {connected ? m.shell.createProject : m.shell.connectSocq}
+            </Link>
+            <a href={guideUrl("getting-started", locale)} target="_blank" rel="noopener" className={bannerSecondary}>
+              <BookOpen aria-hidden="true" className="size-4 transition-transform duration-200 group-hover:-rotate-6" />
+              {m.shell.gettingStarted}
+            </a>
+          </span>
         }
       >
         {m.shell.demoBanner}

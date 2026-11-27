@@ -100,6 +100,8 @@ export const id: Messages = {
     createProject: "Buat proyek Anda",
     staticDemoBanner: "Ini demo langsung dengan data contoh untuk brand fiktif. Jalankan Open Social Listening di server Anda sendiri untuk memantau brand Anda.",
     getOnGithub: "Dapatkan di GitHub",
+    deployGuide: "Panduan deployment",
+    gettingStarted: "Panduan memulai",
   },
   terms: {
     remove: (term: string) => `Hapus ${term}`,
@@ -255,6 +257,8 @@ export const id: Messages = {
     titleNew: "Siapkan proyek baru",
     titleFirst: "Siapkan proyek pertama Anda",
     intro: "Tiga langkah, sekitar dua menit. Semuanya bisa diubah nanti di Pengaturan.",
+    guideLead: "Baru pertama kali?",
+    guideLink: "Ikuti panduan langkah demi langkah",
     stepsLabel: "Langkah",
     steps: ["Hubungkan SocQ", "Yang dipantau", "Sumber dan anggaran"],
     connectTitle: "Hubungkan akun SocQ Anda",

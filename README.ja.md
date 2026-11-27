@@ -8,6 +8,12 @@ Brand24、Mention、Awarioなどのクラウド型ツールに代わるオープ
 [SocQ API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening)
 を使います。SocQ APIは取得した結果の件数に応じた従量課金なので、小規模なブランドを1日1回チェックする程度なら月数ドルで済みます。
 
+<p>
+  <a href="https://socqapi.github.io/open-social-listening/"><img alt="ライブデモ" src="https://img.shields.io/badge/%E3%83%A9%E3%82%A4%E3%83%96%E3%83%87%E3%83%A2-f64c31?style=for-the-badge"></a>
+  <a href="docs/deploy.ja.md"><img alt="デプロイガイド" src="https://img.shields.io/badge/%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4%E3%82%AC%E3%82%A4%E3%83%89-17181c?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="docs/getting-started.ja.md"><img alt="使い方ガイド" src="https://img.shields.io/badge/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89-2a78d6?style=for-the-badge"></a>
+</p>
+
 **[ライブデモを試す](https://socqapi.github.io/open-social-listening/)**：架空のブランドのサンプルデータを使い、すべての画面がブラウザ上で動きます。インストールもAPIキーも不要です。
 
 ![インボックス：ブランド、競合、トピックへのすべてのメンションを、ソース・感情・期間で絞り込めます](docs/screenshots/inbox.png)
@@ -30,8 +36,8 @@ Brand24、Mention、Awarioなどのクラウド型ツールに代わるオープ
 Docker、またはNode.js 22以降が必要です。
 
 ```bash
-git clone https://github.com/SocQAPI/open-social-listening.git
-cd open-social-listening
+mkdir open-social-listening && cd open-social-listening
+curl -fsSLO https://raw.githubusercontent.com/SocQAPI/open-social-listening/main/docker-compose.yml
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
@@ -42,7 +48,7 @@ http://localhost:3000 を開きます。APIキーを設定していない状態�
 
 ![オンボーディング：SocQに接続し、追跡する対象を選んでから、ソースと予算を決めます](docs/screenshots/onboarding.png)
 
-Dockerを使わずに試す場合は、`npm install && npm run dev`で同じアプリがポート3000で起動します。常時稼働させる場合はDockerイメージを使ってください。イメージは`output: "standalone"`でビルドされ、静的ファイルも含まれています。
+**サーバーで動かす場合は**、[デプロイガイド](docs/deploy.ja.md)をご覧ください。まっさらなLinuxサーバーから、独自ドメインとHTTPSの設定、アップデート、バックアップまでを順を追って説明しています。イメージは`ghcr.io/socqapi/open-social-listening`として、x86-64とARM64向けに公開しています。SocQの接続から最初のプロジェクト作成までは、画面つきの[使い方ガイド](docs/getting-started.ja.md)で確認できます。Dockerを使わずに試す場合は、`npm install && npm run dev`で同じアプリがポート3000で起動します。
 
 アプリをインターネットに公開する場合は、`OSL_PASSWORD`を設定してください。すべてのページとAPIルートでパスワードが求められるようになります。
 

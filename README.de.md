@@ -12,6 +12,12 @@ Server, und es fallen keine monatlichen Gebühren pro Nutzer an. Die Beiträge w
 [SocQ-API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening)
 gesammelt, die pro Ergebnis abrechnet. Eine kleine Marke, die einmal am Tag geprüft wird, kostet so nur wenige Dollar im Monat.
 
+<p>
+  <a href="https://socqapi.github.io/open-social-listening/"><img alt="Live-Demo" src="https://img.shields.io/badge/Live--Demo-f64c31?style=for-the-badge"></a>
+  <a href="docs/deploy.de.md"><img alt="Installationsanleitung" src="https://img.shields.io/badge/Installationsanleitung-17181c?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="docs/getting-started.de.md"><img alt="Erste Schritte" src="https://img.shields.io/badge/Erste%20Schritte-2a78d6?style=for-the-badge"></a>
+</p>
+
 **[Live-Demo ausprobieren](https://socqapi.github.io/open-social-listening/)**: die vollständige Oberfläche mit Beispieldaten einer erfundenen Marke, direkt in Ihrem Browser. Keine Installation, kein API-Schlüssel nötig.
 
 ![Der Posteingang: jede Erwähnung der Marke, der Wettbewerber und der Themen, filterbar nach Quelle, Sentiment und Zeitraum](docs/screenshots/inbox.png)
@@ -45,8 +51,8 @@ gesammelt, die pro Ergebnis abrechnet. Eine kleine Marke, die einmal am Tag gepr
 Sie benötigen Docker oder Node.js 22 oder neuer.
 
 ```bash
-git clone https://github.com/SocQAPI/open-social-listening.git
-cd open-social-listening
+mkdir open-social-listening && cd open-social-listening
+curl -fsSLO https://raw.githubusercontent.com/SocQAPI/open-social-listening/main/docker-compose.yml
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
@@ -57,8 +63,11 @@ fügen Sie ihn im ersten Onboarding-Schritt ein und legen Sie dann fest, was die
 
 ![Onboarding: SocQ verbinden, festlegen, was überwacht wird, dann Quellen und Budget wählen](docs/screenshots/onboarding.png)
 
-Zum Ausprobieren ohne Docker startet `npm install && npm run dev` dieselbe App auf Port 3000. Für eine dauerhafte
-Installation verwenden Sie das Docker-Image: Es wird mit `output: "standalone"` gebaut und enthält die statischen Dateien.
+**Auf einem Server betreiben?** Die [Installationsanleitung](docs/deploy.de.md) führt Schritt für Schritt von einem
+frischen Linux-Server bis zur eigenen Domain mit HTTPS, zu Updates und Backups. Das Image wird als
+`ghcr.io/socqapi/open-social-listening` für x86-64 und ARM64 veröffentlicht. Wie Sie SocQ verbinden und Ihr erstes
+Projekt anlegen, zeigt die bebilderte Anleitung [Erste Schritte](docs/getting-started.de.md). Ohne Docker startet
+`npm install && npm run dev` dieselbe App auf Port 3000.
 
 Ist die App aus dem Internet erreichbar, setzen Sie `OSL_PASSWORD`, damit jede Seite und jede API-Route danach fragt.
 

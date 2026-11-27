@@ -8,6 +8,12 @@
 [SocQ API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening)
 采集，按返回的结果计费，一个小品牌每天检查一次，每月只要几美元。
 
+<p>
+  <a href="https://socqapi.github.io/open-social-listening/"><img alt="在线演示" src="https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E6%BC%94%E7%A4%BA-f64c31?style=for-the-badge"></a>
+  <a href="docs/deploy.zh-CN.md"><img alt="部署教程" src="https://img.shields.io/badge/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B-17181c?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="docs/getting-started.zh-CN.md"><img alt="使用教程" src="https://img.shields.io/badge/%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B-2a78d6?style=for-the-badge"></a>
+</p>
+
 **[在线体验演示](https://socqapi.github.io/open-social-listening/)**：完整的界面，配一个虚构品牌的示例数据，直接在浏览器里运行。无需安装，也不需要 API Key。
 
 ![收件箱：品牌、竞品和话题的所有提及，可按来源、情感和时间段筛选](docs/screenshots/inbox.png)
@@ -30,8 +36,8 @@
 需要 Docker，或 Node.js 22 及以上版本。
 
 ```bash
-git clone https://github.com/SocQAPI/open-social-listening.git
-cd open-social-listening
+mkdir open-social-listening && cd open-social-listening
+curl -fsSLO https://raw.githubusercontent.com/SocQAPI/open-social-listening/main/docker-compose.yml
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
@@ -41,7 +47,7 @@ docker compose up -d          # http://localhost:3000, data in ./data
 
 ![引导流程：连接 SocQ，选择要追踪的内容，再选择数据源和预算](docs/screenshots/onboarding.png)
 
-不想用 Docker 时，`npm install && npm run dev` 会在 3000 端口运行同一个应用。需要长期运行的部署请使用 Docker 镜像：它基于 `output: "standalone"` 构建，已包含静态文件。
+**要部署到服务器上？** [部署教程](docs/deploy.zh-CN.md)一步步讲清楚：从一台空白的 Linux 服务器开始，到绑定域名、开启 HTTPS，再到升级和备份。镜像发布在 `ghcr.io/socqapi/open-social-listening`，支持 x86-64 和 ARM64。连接 SocQ、创建第一个项目的每一步，见带截图的[使用教程](docs/getting-started.zh-CN.md)。不用 Docker 时，`npm install && npm run dev` 会在 3000 端口运行同一个应用。
 
 如果应用能从公网访问，请设置 `OSL_PASSWORD`，这样每个页面和 API 路由都需要输入密码。
 
