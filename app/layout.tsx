@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
+import { STATIC_DEMO } from "@/lib/demo/static";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -10,7 +11,8 @@ const grotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600"], vari
 export const metadata: Metadata = {
   title: { default: "Open Social Listening", template: "%s · Open Social Listening" },
   description: "Self-hosted social listening for Reddit, X, YouTube, TikTok, news and the web, powered by the SocQ API.",
-  robots: { index: false, follow: false },
+  // A self-hosted install stays out of search engines; the public static demo is meant to be found.
+  robots: STATIC_DEMO ? { index: true, follow: true } : { index: false, follow: false },
   icons: { icon: "/icon.svg" },
 };
 

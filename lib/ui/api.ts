@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { STATIC_DEMO } from "@/lib/demo/static";
 
 export class ApiError extends Error {
   constructor(
@@ -23,6 +24,7 @@ const MESSAGES: Record<string, string> = {
   project_not_found: "That project no longer exists.",
   delivery_failed: "The test alert could not be delivered.",
   invalid_request: "Some fields need another look.",
+  static_demo: "This is a read-only demo. Install Open Social Listening on your own server to connect SocQ and track your brand.",
 };
 
 export function errorText(error: unknown): string {
@@ -33,12 +35,14 @@ export function errorText(error: unknown): string {
 
 export async function api<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const { json, headers, ...rest } = init ?? {};
-  const res = await fetch(path, {
+  const request: RequestInit = {
     ...rest,
     headers: { ...(json !== undefined ? { "content-type": "application/json" } : {}), ...headers },
     body: json !== undefined ? JSON.stringify(json) : rest.body,
     cache: "no-store",
-  });
+  };
+  // The static demo has no server: the same route handlers run in the browser.
+  const res = STATIC_DEMO ? await (await import("@/lib/demo/static-api")).demoFetch(path, request) : await fetch(path, request);
   if (res.status === 204) return undefined as T;
   const body = (await res.json().catch(() => null)) as (T & { error?: string; message?: string }) | null;
   if (!res.ok) {

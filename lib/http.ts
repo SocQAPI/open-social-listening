@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
-export function json<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json(data, { status });
+// Plain Response (not NextResponse) so the handlers also run in the browser for the static demo.
+export function json<T>(data: T, status = 200): Response {
+  return Response.json(data, { status });
 }
 
 /** Error bodies are always `{ error: <machine code>, message?, issues? }`. */
-export function fail(status: number, error: string, extra: Record<string, unknown> = {}): NextResponse {
-  return NextResponse.json({ error, ...extra }, { status });
+export function fail(status: number, error: string, extra: Record<string, unknown> = {}): Response {
+  return Response.json({ error, ...extra }, { status });
 }
 
-export function invalid(zodError: ZodError): NextResponse {
+export function invalid(zodError: ZodError): Response {
   return fail(400, "invalid_request", {
     issues: zodError.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
   });

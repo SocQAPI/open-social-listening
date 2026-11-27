@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/primitives";
+import { REPO_URL, STATIC_DEMO } from "@/lib/demo/static";
 import { formatInt } from "@/lib/ui/format";
 import { pausedText, useProject } from "./project-context";
 
@@ -64,6 +65,20 @@ export function PageHeader({ title, actions }: { title: string; actions?: ReactN
 export function ProjectBanner() {
   const { project, settings } = useProject();
   if (!project) return null;
+  if (project.isDemo && STATIC_DEMO) {
+    return (
+      <Notice
+        tone="info"
+        action={
+          <a href={REPO_URL} className="inline-flex min-h-10 items-center rounded-[10px] bg-ink px-4 font-semibold text-white no-underline hover:bg-ink-2">
+            Get it on GitHub
+          </a>
+        }
+      >
+        This is a live demo with sample data for a made-up brand. Run Open Social Listening on your own server to track yours.
+      </Notice>
+    );
+  }
   if (project.isDemo) {
     const connected = settings?.apiKey.configured;
     return (

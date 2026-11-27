@@ -9,6 +9,8 @@ in a SQLite file on your server, and there is no monthly seat price. Posts are c
 [SocQ API](https://socq.ai/open-social-listening?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening),
 which bills per result, so a small brand checked once a day costs a few dollars a month.
 
+**[Try the live demo](https://socqapi.github.io/open-social-listening/)**: the full interface with sample data for a made-up brand, running in your browser. Nothing to install, and no API key needed.
+
 ![The inbox: every mention of the brand, competitors and topics, with filters by source, sentiment and period](docs/screenshots/inbox.png)
 
 ## What it does
@@ -39,8 +41,8 @@ cd open-social-listening
 docker compose up -d          # http://localhost:3000, data in ./data
 ```
 
-Open http://localhost:3000. Without an API key the app shows a demo project for a made-up brand, so you can click
-through every screen first. When you want real data, get a key from your
+Open http://localhost:3000. Without an API key the app shows the same demo project as the
+[live demo](https://socqapi.github.io/open-social-listening/), so you can click through every screen first. When you want real data, get a key from your
 [SocQ dashboard](https://socq.ai/dashboard/api-key?utm_source=github&utm_medium=readme&utm_campaign=open-social-listening),
 paste it on the first onboarding step, then tell the app what to listen for.
 
@@ -120,6 +122,14 @@ The API key is stored in your database and only sent to the SocQ API.
 | `GET /api/export` | CSV or JSON download |
 | `GET/PUT /api/settings`, `GET /api/account` | API key and SocQ balance |
 | `POST /api/estimate` | Credit estimate for a project draft |
+
+## Static demo
+
+`npm run build:demo -- /open-social-listening` builds the read-only demo into `out/`, which
+[a workflow](.github/workflows/pages.yml) publishes to GitHub Pages. It is a static export: the same API route
+handlers run in the browser on an in-memory SQLite database ([sql.js](https://sql.js.org)) seeded with the demo
+project, so reading, filtering, starring and exporting work, while anything that would save settings, call SocQ
+or send alerts explains that the demo is read-only.
 
 ## Development
 

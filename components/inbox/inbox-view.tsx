@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, ExternalLink, Search, Star } from "lucide-react";
+import { STATIC_DEMO } from "@/lib/demo/static";
 import type { MentionDTO } from "@/lib/dto";
 import { getSource } from "@/lib/sources";
 import { api, errorText, useApi, useDebounced } from "@/lib/ui/api";
@@ -226,6 +227,14 @@ export function InboxView() {
           <>
             <a
               href={exportHref}
+              onClick={
+                STATIC_DEMO
+                  ? (event) => {
+                      event.preventDefault();
+                      void import("@/lib/demo/static-api").then(({ demoDownload }) => demoDownload(exportHref, "open-social-listening-demo.csv"));
+                    }
+                  : undefined
+              }
               className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-4 font-medium text-ink no-underline transition-colors hover:bg-subtle"
             >
               <Download aria-hidden="true" className="size-4" />
